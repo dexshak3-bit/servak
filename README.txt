@@ -1,36 +1,37 @@
-================================================================================
-# ЧУДО ОБУВЬ — ЧИСТЫЙ КОД ДЛЯ AVALONIA UI (.NET 9 / C# / XAML / VS CODE)
-# ВЫВОД ТОВАРОВ РЕАЛИЗОВАН ЧЕРЕЗ СПИСОК (ListBox С WrapPanel И DataTemplate)
-# БЕЗ ЛИШНИХ ПАКЕТОВ: ТОЛЬКО AVALONIA 11 + POMELO MYSQL 9.0 + EF TOOLS 9.0
-================================================================================
-
-
 #csproj
 ChudoObuv.csproj
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ChudoObuv</RootNamespace>
+    <AssemblyName>ChudoObuv</AssemblyName>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+    <Product>Чудо Обувь</Product>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Базовые пакеты Avalonia (из стандартного шаблона) -->
     <PackageReference Include="Avalonia" Version="11.2.3" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
-
-    <!-- Только строго запрошенные пакеты версии 9.0 -->
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.2.efcore.9.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.2">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="8.0.11" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Логотип и иконка вшиваются в сборку (avares://) -->
+    <AvaloniaResource Include="Resources\**" />
+    <!-- Фото товаров лежат рядом с exe -->
+    <Content Include="Images\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
 
 
@@ -41,226 +42,300 @@ appsettings.json
 }
 
 
+#Program
+Program.cs
+using Avalonia;
+
+namespace ChudoObuv;
+
+internal static class Program
+{
+    [STAThread]
+    public static void Main(string[] args) =>
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+
+    public static AppBuilder BuildAvaloniaApp() =>
+        AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            .LogToTrace();
+}
+
+
 #App
 App.axaml
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="ChudoObuvAvalonia.App"
+             x:Class="ChudoObuv.App"
              RequestedThemeVariant="Light">
     <Application.Styles>
         <FluentTheme />
-
-        <!-- Шрифт и базовые цвета -->
-        <Style Selector="Window">
-            <Setter Property="FontFamily" Value="Calibri, Inter, Sans-Serif"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="Foreground" Value="#1F2D2B"/>
-        </Style>
-
-        <!-- Заголовок формы -->
-        <Style Selector="TextBlock.heading">
-            <Setter Property="FontSize" Value="24"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="#1F2D2B"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
-        </Style>
-
-        <Style Selector="TextBlock.fieldLabel">
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#4F6B68"/>
-            <Setter Property="Margin" Value="0,0,0,3"/>
-        </Style>
-
-        <!-- Кнопки -->
-        <Style Selector="Button">
-            <Setter Property="Background" Value="#D2F6E7"/>
-            <Setter Property="Foreground" Value="#1F2D2B"/>
-            <Setter Property="BorderBrush" Value="#70B2AF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="2"/>
-            <Setter Property="Padding" Value="14,6"/>
-            <Setter Property="Margin" Value="4"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
-        <Style Selector="Button.accent">
-            <Setter Property="Background" Value="#70B2AF"/>
-            <Setter Property="Foreground" Value="#FFFFFF"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="BorderBrush" Value="#3E7C79"/>
-        </Style>
-
-        <Style Selector="Button.light">
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="Foreground" Value="#1F2D2B"/>
-            <Setter Property="BorderBrush" Value="#70B2AF"/>
-        </Style>
-
-        <!-- Поля ввода -->
-        <Style Selector="TextBox">
-            <Setter Property="BorderBrush" Value="#70B2AF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="2"/>
-            <Setter Property="Padding" Value="8,5"/>
-        </Style>
-
-        <Style Selector="ComboBox">
-            <Setter Property="BorderBrush" Value="#70B2AF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="2"/>
-            <Setter Property="Padding" Value="8,5"/>
-        </Style>
-
-        <!-- Карточки и панели -->
-        <Style Selector="Border.card">
-            <Setter Property="BorderBrush" Value="#70B2AF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="2"/>
-            <Setter Property="Padding" Value="12"/>
-        </Style>
-
-        <Style Selector="Border.panel">
-            <Setter Property="Background" Value="#D2F6E7"/>
-            <Setter Property="BorderBrush" Value="#70B2AF"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="2"/>
-            <Setter Property="Padding" Value="10"/>
-        </Style>
-
-        <!-- Прозрачные элементы списка товаров для естественного отображения карточек -->
-        <Style Selector="ListBox.productsList ListBoxItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Margin" Value="0"/>
-        </Style>
-        <Style Selector="ListBox.productsList ListBoxItem:selected /template/ ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
     </Application.Styles>
+
+    <Application.Resources>
+        <SolidColorBrush x:Key="MainBg" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="AltBg" Color="#D2F6E7"/>
+        <SolidColorBrush x:Key="Accent" Color="#70B2AF"/>
+        <SolidColorBrush x:Key="AccentDark" Color="#3E7C79"/>
+        <SolidColorBrush x:Key="LowStockBg" Color="#FF8080"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#1F2D2B"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#4F6B68"/>
+        <SolidColorBrush x:Key="ErrorBrush" Color="#C0392B"/>
+        <CornerRadius x:Key="Radius">2</CornerRadius>
+    </Application.Resources>
 </Application>
 
-
 App.axaml.cs
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using ChudoObuvAvalonia.Models;
-using System.Globalization;
+using ChudoObuv.Models;
+using ChudoObuv.Views;
 
-namespace ChudoObuvAvalonia;
+namespace ChudoObuv;
 
 public partial class App : Application
 {
-    private static MyDbContext? _db;
-
-    public static MyDbContext Db => _db ??= new MyDbContext();
+    private static ChudoObuvContext? db;
+    public static ChudoObuvContext Db => db ??= new ChudoObuvContext();
 
     public static void ResetDb()
     {
-        _db?.Dispose();
-        _db = null;
+        db?.Dispose();
+        db = null;
     }
 
-    public override void Initialize()
+    public App()
     {
         var ru = new CultureInfo("ru-RU");
         CultureInfo.DefaultThreadCurrentCulture = ru;
         CultureInfo.DefaultThreadCurrentUICulture = ru;
         CultureInfo.CurrentCulture = ru;
         CultureInfo.CurrentUICulture = ru;
-
-        AvaloniaXamlLoader.Load(this);
     }
+
+    public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new AuthWindow();
+            // Приложение начинается с окна авторизации
+            desktop.MainWindow = new LoginWindow();
         }
-
         base.OnFrameworkInitializationCompleted();
     }
 }
 
 
-Program.cs
-﻿using Avalonia;
-using System;
+#Dialogs
+Dialogs.cs
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
 
-namespace ChudoObuvAvalonia;
+namespace ChudoObuv;
 
-class Program
+/// <summary>Замена WPF MessageBox: в Avalonia его нет.</summary>
+public static class Dialogs
 {
-    [STAThread]
-    public static void Main(string[] args) => BuildAvaloniaApp()
-        .StartWithClassicDesktopLifetime(args);
+    public static Task ShowMessage(Window owner, string text, string title = "Сообщение")
+        => Show(owner, text, title, "OK", null);
 
-    public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
-            .UsePlatformDetect()
-            .WithInterFont()
-            .LogToTrace();
+    public static async Task<bool> Confirm(Window owner, string text, string title = "Подтверждение")
+        => await Show(owner, text, title, "Да", "Нет");
+
+    private static async Task<bool> Show(Window owner, string text, string title, string okText, string? cancelText)
+    {
+        var dlg = new Window
+        {
+            Title = title,
+            Width = 380,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = Brushes.White
+        };
+
+        var ok = new Button { Content = okText, MinWidth = 80, HorizontalContentAlignment = HorizontalAlignment.Center };
+        ok.Click += (_, _) => dlg.Close(true);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8,
+            Margin = new Thickness(0, 18, 0, 0)
+        };
+        buttons.Children.Add(ok);
+
+        if (cancelText != null)
+        {
+            var cancel = new Button { Content = cancelText, MinWidth = 80, HorizontalContentAlignment = HorizontalAlignment.Center };
+            cancel.Click += (_, _) => dlg.Close(false);
+            buttons.Children.Add(cancel);
+        }
+
+        dlg.Content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Children =
+            {
+                new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap },
+                buttons
+            }
+        };
+
+        var result = await dlg.ShowDialog<bool?>(owner);
+        return result == true;
+    }
 }
 
 
-#Models
-AppSettings.cs
-using System;
-using System.IO;
-using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
+#ProductTools
+ProductTools.cs
+using Avalonia.Controls;
+using ChudoObuv.Models;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv;
 
-public static class AppSettings
+public static class ProductTools
 {
-    private const string DefaultConnection =
-        "server=localhost;port=3306;database=chudo_obuv;user=root;password=1234;CharSet=utf8mb4";
-
-    private static string? _connectionString;
-    private static ServerVersion? _serverVersion;
-
-    public static string ConnectionString
+    // Один метод поиска (раньше было два одинаковых: Search и srearch).
+    // ?? "" защищает от NullReferenceException, если в БД NULL.
+    public static List<Product> Search(List<Product> list, string? text)
     {
-        get
+        if (string.IsNullOrWhiteSpace(text)) return list;
+        text = text.Trim().ToLower();
+        return list.Where(p =>
+            (p.ProductName ?? "").ToLower().Contains(text) ||
+            (p.Composition ?? "").ToLower().Contains(text) ||
+            (p.Description ?? "").ToLower().Contains(text) ||
+            (p.Manufacturer?.ManufacturerName ?? "").ToLower().Contains(text)).ToList();
+    }
+
+    public static List<Product> ByManufacturer(List<Product> list, string? name)
+    {
+        if (string.IsNullOrEmpty(name) || name == "Все") return list;
+        return list.Where(p => p.Manufacturer.ManufacturerName == name).ToList();
+    }
+
+    public static List<Product> ByCategory(List<Product> list, string? name)
+    {
+        if (string.IsNullOrEmpty(name) || name == "Все") return list;
+        return list.Where(p => p.CategoryName == name).ToList();
+    }
+
+    public static List<Product> BySubcategory(List<Product> list, string? name)
+    {
+        if (string.IsNullOrEmpty(name) || name == "Все") return list;
+        return list.Where(p => p.Subcategory.SubcategoryName == name).ToList();
+    }
+
+    public static List<Product> OnlyInStock(List<Product> list)
+        => list.Where(p => p.TotalQuantity > 0).ToList();
+    public static List<Product> OnlyLowStock(List<Product> list)
+        => list.Where(p => p.IsLowStock).ToList();
+    public static List<Product> ByPrice(List<Product> list, decimal min, decimal max)
+        => list.Where(p => p.Price >= min && p.Price <= max).ToList();
+    public static List<Product> BySize(List<Product> list, decimal size)
+        => list.Where(p => p.StockItems.Any(s => s.SizeValue == size && s.Quantity > 0)).ToList();
+
+    public static readonly string[] SortNames =
+    {
+        "Без сортировки",
+        "Цена по возростанию",
+        "Цена по убыванию",
+        "Название А-Я",
+        "Название Я-А",
+        "Остаток по возростанию",
+        "Остаток по убыванию",
+    };
+
+    public static List<Product> Sort(List<Product> list, string? sort)
+    {
+        switch (sort)
         {
-            if (_connectionString != null)
-                return _connectionString;
-
-            _connectionString = DefaultConnection;
-            try
-            {
-                var file = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-                if (File.Exists(file))
-                {
-                    using var doc = JsonDocument.Parse(File.ReadAllText(file));
-                    if (doc.RootElement.TryGetProperty("ConnectionString", out var value)
-                        && !string.IsNullOrWhiteSpace(value.GetString()))
-                    {
-                        _connectionString = value.GetString()!;
-                    }
-                }
-            }
-            catch { }
-
-            return _connectionString;
+            case "Цена по возростанию":    return list.OrderBy(p => p.Price).ToList();
+            case "Цена по убыванию":       return list.OrderByDescending(p => p.Price).ToList();
+            case "Название А-Я":           return list.OrderBy(p => p.ProductName).ToList();
+            case "Название Я-А":           return list.OrderByDescending(p => p.ProductName).ToList();
+            case "Остаток по возростанию": return list.OrderBy(p => p.TotalQuantity).ToList();
+            case "Остаток по убыванию":    return list.OrderByDescending(p => p.TotalQuantity).ToList();
+            default:                       return list.OrderBy(p => p.ProductId).ToList();
         }
     }
 
-    public static ServerVersion GetServerVersion()
+    public static List<string> ComboItems(IEnumerable<string> values)
     {
-        return _serverVersion ??= ServerVersion.AutoDetect(ConnectionString);
+        var result = new List<string> { "Все" };
+        result.AddRange(values.Distinct().OrderBy(x => x));
+        return result;
+    }
+
+    public static decimal AveragePrice(List<Product> list) => list.Count == 0 ? 0 : list.Average(p => p.Price);
+    public static decimal MaxPrice(List<Product> list)     => list.Count == 0 ? 0 : list.Max(p => p.Price);
+    public static decimal MinPrice(List<Product> list)     => list.Count == 0 ? 0 : list.Min(p => p.Price);
+    public static int TotalPairs(List<Product> list)       => list.Sum(p => p.TotalQuantity);
+    public static decimal StockValue(List<Product> list)   => list.Sum(p => p.Price * p.TotalQuantity);
+
+    // В Avalonia нет MessageBox, поэтому метод асинхронный и принимает окно-владельца.
+    public static async Task<bool> DeleteAsync(Window owner, Product product)
+    {
+        bool inOrders = product.StockItems.Any(s => s.OrderItems.Count > 0);
+        if (inOrders)
+        {
+            await Dialogs.ShowMessage(owner, "Нельзя удалить: товар есть в заказах.", "Ошибка");
+            return false;
+        }
+
+        bool yes = await Dialogs.Confirm(owner, $"Удалить товар «{product.ProductName}»?");
+        if (!yes) return false;
+
+        App.Db.StockItems.RemoveRange(product.StockItems);
+        App.Db.Products.Remove(product);
+        App.Db.SaveChanges();
+        return true;
+    }
+
+    public static void SetPrice(Product product, decimal newPrice)
+    {
+        product.Price = newPrice;
+        App.Db.SaveChanges();
+    }
+
+    public static void Discount(Product product, decimal percent)
+    {
+        product.Price = Math.Round(product.Price * (100 - percent) / 100, 2);
+        App.Db.SaveChanges();
+    }
+
+    public static void DiscountAll(List<Product> list, decimal percent)
+    {
+        foreach (var p in list)
+            p.Price = Math.Round(p.Price * (100 - percent) / 100, 2);
+        App.Db.SaveChanges();
+    }
+
+    public static void AddStock(Product product, decimal size, int delta)
+    {
+        var item = product.StockItems.FirstOrDefault(s => s.SizeValue == size);
+        if (item == null)
+            product.StockItems.Add(new StockItem { SizeValue = size, Quantity = Math.Max(0, delta) });
+        else
+            item.Quantity = Math.Max(0, item.Quantity + delta);
+        App.Db.SaveChanges();
     }
 }
 
 
-Category.cs
-﻿using System;
+#Models (ЧИСТЫЕ МОДЕЛИ ИЗ СКАФФОЛДА EF CORE БЕЗ [NotMapped])
+Models/Category.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class Category
 {
@@ -271,12 +346,11 @@ public partial class Category
     public virtual ICollection<Subcategory> Subcategories { get; set; } = new List<Subcategory>();
 }
 
-
-Manufacturer.cs
-﻿using System;
+Models/Manufacturer.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class Manufacturer
 {
@@ -287,12 +361,11 @@ public partial class Manufacturer
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }
 
-
-Order.cs
-﻿using System;
+Models/Order.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class Order
 {
@@ -307,12 +380,11 @@ public partial class Order
     public virtual User User { get; set; } = null!;
 }
 
-
-OrderItem.cs
-﻿using System;
+Models/OrderItem.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class OrderItem
 {
@@ -331,12 +403,11 @@ public partial class OrderItem
     public virtual StockItem StockItem { get; set; } = null!;
 }
 
-
-Product.cs
-﻿using System;
+Models/Product.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class Product
 {
@@ -352,9 +423,6 @@ public partial class Product
 
     public string Composition { get; set; } = null!;
 
-    /// <summary>
-    /// имя файла изображения в папке Images приложения
-    /// </summary>
     public string? ImageFile { get; set; }
 
     public decimal Price { get; set; }
@@ -366,12 +434,11 @@ public partial class Product
     public virtual Subcategory Subcategory { get; set; } = null!;
 }
 
-
-Role.cs
-﻿using System;
+Models/Role.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class Role
 {
@@ -382,12 +449,11 @@ public partial class Role
     public virtual ICollection<User> Users { get; set; } = new List<User>();
 }
 
-
-StockItem.cs
-﻿using System;
+Models/StockItem.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class StockItem
 {
@@ -404,12 +470,11 @@ public partial class StockItem
     public virtual Product Product { get; set; } = null!;
 }
 
-
-Subcategory.cs
-﻿using System;
+Models/Subcategory.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class Subcategory
 {
@@ -424,12 +489,11 @@ public partial class Subcategory
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 }
 
-
-User.cs
-﻿using System;
+Models/User.cs
+using System;
 using System.Collections.Generic;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
 public partial class User
 {
@@ -450,154 +514,20 @@ public partial class User
     public virtual Role Role { get; set; } = null!;
 }
 
-
-PartialModels.cs
+Models/ChudoObuvContext.cs
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.IO;
-using System.Linq;
-using Avalonia.Media;
-using Avalonia.Media.Imaging;
-using ChudoObuvAvalonia.Services;
-
-namespace ChudoObuvAvalonia.Models;
-
-public partial class User
-{
-    [NotMapped]
-    public string Fio => string.Join(" ",
-        new[] { LastName, FirstName, Patronymic }.Where(s => !string.IsNullOrWhiteSpace(s)));
-}
-
-public partial class Product
-{
-    public const int LowStockLimit = 3;
-
-    [NotMapped]
-    public string CategoryText => $"{Subcategory?.Category?.CategoryName ?? ""} / {Subcategory?.SubcategoryName ?? ""}";
-
-    [NotMapped]
-    public string CategoryName => Subcategory?.Category?.CategoryName ?? "";
-
-    [NotMapped]
-    public string ManufacturerText => "Производитель: " + (Manufacturer?.ManufacturerName ?? "");
-
-    [NotMapped]
-    public string CompositionText => "Состав: " + Composition;
-
-    [NotMapped]
-    public int TotalQuantity => StockItems?.Sum(s => s.Quantity) ?? 0;
-
-    [NotMapped]
-    public bool IsLowStock => TotalQuantity <= LowStockLimit;
-
-    /// <summary>Цвет фона карточки: #FF8080 если остаток &lt;= 3, иначе белый #FFFFFF.</summary>
-    [NotMapped]
-    public IBrush CardBackground => IsLowStock ? Brush.Parse("#FF8080") : Brush.Parse("#FFFFFF");
-
-    [NotMapped]
-    public List<StockItem> AvailableStock => StockItems?
-        .Where(s => s.Quantity > 0)
-        .OrderBy(s => s.SizeValue)
-        .ToList() ?? new();
-
-    [NotMapped]
-    public StockItem? SelectedStockItem { get; set; }
-
-    [NotMapped]
-    public bool CanOrder => Session.CanOrder && AvailableStock.Count > 0;
-
-    [NotMapped]
-    public string SizesText
-    {
-        get
-        {
-            var list = AvailableStock;
-            return list.Count == 0
-                ? "нет в наличии"
-                : string.Join(", ", list.Select(s => s.SizeText));
-        }
-    }
-
-    [NotMapped]
-    public string SizesDisplay => "Размеры: " + SizesText;
-
-    [NotMapped]
-    public string CountText => $"В наличии: {TotalQuantity} пар";
-
-    [NotMapped]
-    public string ImagePath => Path.Combine(AppContext.BaseDirectory, "Images",
-        string.IsNullOrWhiteSpace(ImageFile) ? "picture.png" : ImageFile);
-
-    [NotMapped]
-    public Bitmap? ProductBitmap => ImageHelper.LoadBitmap(ImagePath);
-
-    [NotMapped]
-    public string PriceText => Price.ToString("N0") + " ₽";
-}
-
-public partial class StockItem
-{
-    [NotMapped]
-    public string SizeText => SizeValue.ToString("0.#");
-
-    [NotMapped]
-    public string SizeDisplay => $"Размер {SizeText} (в наличии: {Quantity})";
-
-    [NotMapped]
-    public string FullDisplay => $"{Product?.ProductName} — размер {SizeText} (в наличии: {Quantity})";
-}
-
-public partial class Order
-{
-    [NotMapped]
-    public string CustomerFio => User?.Fio ?? "";
-
-    [NotMapped]
-    public decimal Total => OrderItems?.Sum(i => i.Quantity * i.UnitPrice) ?? 0;
-
-    [NotMapped]
-    public string TotalText => Total.ToString("N0") + " ₽";
-
-    [NotMapped]
-    public int ItemsCount => OrderItems?.Sum(i => i.Quantity) ?? 0;
-}
-
-public partial class OrderItem
-{
-    [NotMapped]
-    public string ProductName => StockItem?.Product?.ProductName ?? "";
-
-    [NotMapped]
-    public string SizeText => StockItem?.SizeText ?? "";
-
-    [NotMapped]
-    public decimal Sum => Quantity * UnitPrice;
-
-    [NotMapped]
-    public string PriceText => UnitPrice.ToString("N0") + " ₽";
-
-    [NotMapped]
-    public string SumText => Sum.ToString("N0") + " ₽";
-}
-
-
-MyDbContext.cs
-﻿using System;
-using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Scaffolding.Internal;
 
-namespace ChudoObuvAvalonia.Models;
+namespace ChudoObuv.Models;
 
-public partial class MyDbContext : DbContext
+public partial class ChudoObuvContext : DbContext
 {
-    public MyDbContext()
+    public ChudoObuvContext()
     {
     }
 
-    public MyDbContext(DbContextOptions<MyDbContext> options)
+    public ChudoObuvContext(DbContextOptions<ChudoObuvContext> options)
         : base(options)
     {
     }
@@ -620,18 +550,18 @@ public partial class MyDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
-    public virtual DbSet<VOrderTotal> VOrderTotals { get; set; }
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySql("server=localhost;database=chudo_obuv;uid=root;password=1234", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.46-mysql"));
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder
+                .UseLazyLoadingProxies()
+                .UseMySql(AppSettings.ConnectionString, AppSettings.GetServerVersion());
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder
-            .UseCollation("utf8mb4_unicode_ci")
-            .HasCharSet("utf8mb4");
-
         modelBuilder.Entity<Category>(entity =>
         {
             entity.HasKey(e => e.CategoryId).HasName("PRIMARY");
@@ -682,7 +612,7 @@ public partial class MyDbContext : DbContext
         {
             entity.HasKey(e => e.OrderItemId).HasName("PRIMARY");
 
-            entity.ToTable("order_items");
+            entity.ToTable("order_items", tb => tb.HasCheckConstraint("ck_oi_quantity", "quantity > 0"));
 
             entity.HasIndex(e => e.StockItemId, "ix_oi_stock");
 
@@ -767,7 +697,7 @@ public partial class MyDbContext : DbContext
         {
             entity.HasKey(e => e.StockItemId).HasName("PRIMARY");
 
-            entity.ToTable("stock_items");
+            entity.ToTable("stock_items", tb => tb.HasCheckConstraint("ck_stock_quantity", "quantity >= 0"));
 
             entity.HasIndex(e => new { e.ProductId, e.SizeValue }, "uq_stock_product_size").IsUnique();
 
@@ -782,6 +712,7 @@ public partial class MyDbContext : DbContext
                 .HasForeignKey(d => d.ProductId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_stock_product");
+
         });
 
         modelBuilder.Entity<Subcategory>(entity =>
@@ -810,9 +741,9 @@ public partial class MyDbContext : DbContext
 
             entity.ToTable("users");
 
-            entity.HasIndex(e => e.RoleId, "ix_users_role");
-
             entity.HasIndex(e => e.Login, "uq_users_login").IsUnique();
+
+            entity.HasIndex(e => e.RoleId, "ix_users_role");
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.FirstName)
@@ -835,278 +766,309 @@ public partial class MyDbContext : DbContext
                 .HasConstraintName("fk_users_role");
         });
 
-        modelBuilder.Entity<VOrderTotal>(entity =>
-        {
-            entity
-                .HasNoKey()
-                .ToView("v_order_totals");
-
-            entity.Property(e => e.CustomerFio)
-                .HasMaxLength(182)
-                .HasColumnName("customer_fio");
-            entity.Property(e => e.ItemsCount).HasColumnName("items_count");
-            entity.Property(e => e.OrderDate).HasColumnName("order_date");
-            entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.TotalSum)
-                .HasPrecision(42, 2)
-                .HasColumnName("total_sum");
-        });
-
         OnModelCreatingPartial(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
 
+Models/AppSettings.cs
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
-#Services
-ImageHelper.cs
+namespace ChudoObuv.Models;
+public static class AppSettings
+{
+    private const string DefaultConnection =
+        "server=localhost;port=3306;database=chudo_obuv;user=root;password=1234;CharSet=utf8mb4";
+
+    private static string? connectionString;
+    private static ServerVersion? serverVersion;
+
+    public static string ConnectionString
+    {
+        get
+        {
+            if (connectionString != null)
+                return connectionString;
+
+            connectionString = DefaultConnection;
+            
+            {
+                var file = System.IO.Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+                if (System.IO.File.Exists(file))
+                {
+                    using var doc = JsonDocument.Parse(System.IO.File.ReadAllText(file));
+                    if (doc.RootElement.TryGetProperty("ConnectionString", out var value)
+                        && !string.IsNullOrWhiteSpace(value.GetString()))
+                    {
+                        connectionString = value.GetString()!;
+                    }
+                }
+            }
+           
+
+            return connectionString;
+        }
+    }
+    public static ServerVersion GetServerVersion()
+    {
+        return serverVersion ??= ServerVersion.AutoDetect(ConnectionString);
+    }
+}
+
+
+#PartialModels (ЧАСТИЧНЫЕ КЛАССЫ С ВЫЧИСЛЯЕМЫМИ СВОЙСТВАМИ И КОРЗИНОЙ)
+Models/PartialModels.cs
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 
-namespace ChudoObuvAvalonia.Services;
+namespace ChudoObuv.Models;
 
-public static class ImageHelper
+public partial class User
 {
-    private static readonly Dictionary<string, Bitmap?> Cache = new();
+    [NotMapped]
+    public string Fio => string.Join(" ",
+        new[] { LastName, FirstName, Patronymic }.Where(s => !string.IsNullOrWhiteSpace(s)));
+}
 
-    public static Bitmap? LoadBitmap(string? path)
+public partial class Product
+{
+    public const int LowStockLimit = 3;
+
+    [NotMapped]
+    public string CategoryText => $"{Subcategory?.Category?.CategoryName ?? ""} / {Subcategory?.SubcategoryName ?? ""}";
+
+    [NotMapped]
+    public string CategoryName => Subcategory?.Category?.CategoryName ?? "";
+
+    /// <summary>Доступное для заказа количество суммарно по всем размерам модели.</summary>
+    [NotMapped]
+    public int TotalQuantity => StockItems.Sum(s => s.Quantity);
+
+    /// <summary>Товары с суммарным количеством <= 3 подсвечиваются в списке.</summary>
+    [NotMapped]
+    public bool IsLowStock => TotalQuantity <= LowStockLimit;
+
+    [NotMapped]
+    public List<StockItem> AvailableStock => StockItems
+        .Where(s => s.Quantity > 0)
+        .OrderBy(s => s.SizeValue)
+        .ToList();
+
+    [NotMapped]
+    public string SizesText
     {
-        if (string.IsNullOrWhiteSpace(path))
-            path = Path.Combine(AppContext.BaseDirectory, "Images", "picture.png");
-
-        if (Cache.TryGetValue(path, out var cached))
-            return cached;
-
-        Bitmap? bmp = null;
-        try
+        get
         {
-            if (File.Exists(path))
-            {
-                bmp = new Bitmap(path);
-            }
-            else
-            {
-                var fallback = Path.Combine(AppContext.BaseDirectory, "Images", "picture.png");
-                if (File.Exists(fallback))
-                    bmp = new Bitmap(fallback);
-            }
+            var list = AvailableStock;
+            return list.Count == 0
+                ? "нет в наличии"
+                : string.Join(", ", list.Select(s => s.SizeText));
         }
-        catch
+    }
+
+    [NotMapped]
+    public string SizesDisplayText => "Размеры: " + SizesText;
+
+    [NotMapped]
+    public string ManufacturerText => "Производитель: " + (Manufacturer?.ManufacturerName ?? "");
+
+    [NotMapped]
+    public string CompositionText => "Состав: " + (Composition ?? "");
+
+    [NotMapped]
+    public string StockCountDisplay => $"В наличии: {TotalQuantity} пар";
+
+    [NotMapped]
+    public string ImagePath => System.IO.Path.Combine(AppContext.BaseDirectory, "Images",
+        string.IsNullOrWhiteSpace(ImageFile) ? "picture.png" : ImageFile);
+
+    [NotMapped]
+    public string PriceText => Price.ToString("N0") + " ₽";
+
+    [NotMapped]
+    public IBrush CardBackground => IsLowStock
+        ? Brush.Parse("#FF8080")
+        : Brushes.White;
+
+    [NotMapped]
+    public Bitmap? ImageBitmap
+    {
+        get
         {
-            bmp = null;
+            var file = System.IO.File.Exists(ImagePath)
+                ? ImagePath
+                : System.IO.Path.Combine(AppContext.BaseDirectory, "Images", "picture.png");
+            if (!System.IO.File.Exists(file)) return null;
+            try
+            {
+                using var stream = System.IO.File.OpenRead(file);
+                return Bitmap.DecodeToWidth(stream, 240);
+            }
+            catch { return null; }
         }
-
-        Cache[path] = bmp;
-        return bmp;
     }
 }
 
-
-Session.cs
-using ChudoObuvAvalonia.Models;
-
-namespace ChudoObuvAvalonia.Services;
-
-public enum AppRole
+public partial class StockItem
 {
-    Guest,
-    User,
-    Manager,
-    Admin
+    [NotMapped]
+    public string SizeText => SizeValue.ToString("0.#");
+
+    [NotMapped]
+    public string SizeDisplay => $"Размер {SizeText} (в наличии: {Quantity})";
+
+    [NotMapped]
+    public string FullDisplay => $"{Product?.ProductName ?? ""} — размер {SizeText} (в наличии: {Quantity})";
 }
 
-public static class Session
+public partial class Order
 {
-    public static int? UserId { get; private set; }
-    public static string Fio { get; private set; } = "Гость";
-    public static string RoleName { get; private set; } = "Неавторизованный пользователь";
-    public static AppRole Role { get; private set; } = AppRole.Guest;
+    [NotMapped]
+    public string CustomerFio => User?.Fio ?? "Неизвестный клиент";
 
-    public static bool CanOrder => Role != AppRole.Guest;
-    public static bool CanFilter => Role != AppRole.Guest;
-    public static bool CanManageOrders => Role == AppRole.Manager || Role == AppRole.Admin;
-    public static bool CanEditOrders => Role == AppRole.Admin;
+    [NotMapped]
+    public decimal Total => OrderItems.Sum(i => i.Quantity * i.UnitPrice);
 
-    public static void Login(User user)
-    {
-        UserId = user.UserId;
-        Fio = user.Fio;
-        RoleName = user.Role?.RoleName ?? "Авторизованный пользователь";
-        Role = RoleName switch
-        {
-            "Администратор" => AppRole.Admin,
-            "Менеджер" => AppRole.Manager,
-            _ => AppRole.User
-        };
-    }
+    [NotMapped]
+    public int ItemsCount => OrderItems.Sum(i => i.Quantity);
 
-    public static void Logout()
-    {
-        UserId = null;
-        Fio = "Гость";
-        RoleName = "Неавторизованный пользователь";
-        Role = AppRole.Guest;
-    }
+    [NotMapped]
+    public string OrderDateText => OrderDate.ToString("dd.MM.yyyy");
+
+    [NotMapped]
+    public string SummaryText => $"Заказ №{OrderId} от {OrderDateText} — {CustomerFio}: {ItemsCount} шт. на {Total:N0} ₽";
 }
 
-
-Cart.cs
-using System;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
-using ChudoObuvAvalonia.Models;
-
-namespace ChudoObuvAvalonia.Services;
-
-public class CartLine : INotifyPropertyChanged
+public partial class OrderItem
 {
-    private int _quantity;
+    [NotMapped]
+    public string ProductName => StockItem?.Product?.ProductName ?? "Товар";
 
-    public CartLine(StockItem item, int quantity)
-    {
-        Item = item;
-        _quantity = quantity;
-    }
+    [NotMapped]
+    public string SizeText => StockItem?.SizeText ?? "";
 
-    public StockItem Item { get; }
-    public string ProductName => Item.Product?.ProductName ?? "";
-    public string SizeText => Item.SizeText;
-    public decimal UnitPrice => Item.Product?.Price ?? 0;
+    [NotMapped]
     public decimal Sum => Quantity * UnitPrice;
 
-    public int Quantity
-    {
-        get => _quantity;
-        set
-        {
-            _quantity = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Quantity)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Sum)));
-        }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
+    [NotMapped]
+    public string DisplayText => $"{ProductName} (р. {SizeText}) — {Quantity} шт. x {UnitPrice:N0} ₽ = {Sum:N0} ₽";
 }
 
-public static class Cart
+public class CartItem
 {
-    public static ObservableCollection<CartLine> Lines { get; } = new();
-    public static event Action? Changed;
+    public StockItem StockItem { get; set; } = null!;
+    public int Quantity { get; set; }
 
-    public static int TotalCount => Lines.Sum(l => l.Quantity);
-    public static decimal TotalSum => Lines.Sum(l => l.Sum);
+    public string ProductName => StockItem?.Product?.ProductName ?? "Товар";
+    public string SizeText => StockItem?.SizeText ?? "";
+    public decimal UnitPrice => StockItem?.Product?.Price ?? 0;
+    public decimal Sum => Quantity * UnitPrice;
+    public string PriceText => UnitPrice.ToString("N0") + " ₽";
+    public string SumText => Sum.ToString("N0") + " ₽";
+    public string DisplayText => $"{ProductName} (р. {SizeText}) — {Quantity} шт. по {PriceText} = {SumText}";
+}
 
-    public static bool TryAdd(StockItem item, out string message)
+public static class CartManager
+{
+    public static List<CartItem> Items { get; } = new();
+
+    public static int TotalCount => Items.Sum(i => i.Quantity);
+    public static decimal TotalSum => Items.Sum(i => i.Sum);
+
+    public static void Add(StockItem stock, int qty = 1)
     {
-        var line = Lines.FirstOrDefault(l => l.Item.StockItemId == item.StockItemId);
-        int newQty = (line?.Quantity ?? 0) + 1;
-        if (newQty > item.Quantity)
+        var existing = Items.FirstOrDefault(i => i.StockItem.StockItemId == stock.StockItemId);
+        if (existing != null)
         {
-            message = $"Доступно для заказа только {item.Quantity} пар.";
-            return false;
+            if (existing.Quantity + qty <= stock.Quantity)
+                existing.Quantity += qty;
         }
-
-        if (line == null)
-            Lines.Add(new CartLine(item, 1));
         else
-            line.Quantity = newQty;
-
-        message = "";
-        RaiseChanged();
-        return true;
-    }
-
-    public static bool TryChangeQuantity(CartLine line, int delta, out string message)
-    {
-        int newQty = line.Quantity + delta;
-        message = "";
-        if (newQty < 1) return false;
-        if (newQty > line.Item.Quantity)
         {
-            message = $"Доступно для заказа только {line.Item.Quantity} пар.";
-            return false;
+            Items.Add(new CartItem { StockItem = stock, Quantity = Math.Min(qty, stock.Quantity) });
         }
-
-        line.Quantity = newQty;
-        RaiseChanged();
-        return true;
     }
 
-    public static void Remove(CartLine line)
-    {
-        Lines.Remove(line);
-        RaiseChanged();
-    }
-
-    public static void Clear()
-    {
-        Lines.Clear();
-        RaiseChanged();
-    }
-
-    public static void RaiseChanged() => Changed?.Invoke();
+    public static void Clear() => Items.Clear();
 }
 
 
-#AuthWindow
-AuthWindow.axaml
+#Views
+Views/LoginWindow.axaml
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="ChudoObuvAvalonia.AuthWindow"
-        Title="Чудо Обувь — Авторизация"
-        Width="420" Height="560"
-        CanResize="False"
+        x:Class="ChudoObuv.Views.LoginWindow"
+        x:CompileBindings="False"
+        Title="Авторизация — Чудо Обувь"
+        Icon="/Resources/app.ico"
+        Width="380" SizeToContent="Height" CanResize="False"
         WindowStartupLocation="CenterScreen"
-        Background="#D2F6E7">
-    <Grid>
-        <Border Classes="card" Margin="24" Padding="28,20" VerticalAlignment="Center">
-            <StackPanel Spacing="10">
-                <Image Source="/Resources/logo.png" Height="140" Stretch="Uniform" HorizontalAlignment="Center"/>
-                <TextBlock Text="Чудо Обувь" Classes="heading" HorizontalAlignment="Center"/>
-                <TextBlock Text="Авторизация" FontSize="16" Foreground="#4F6B68" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                
-                <TextBlock Text="Логин" Classes="fieldLabel"/>
-                <TextBox x:Name="LoginTB" FontSize="16" Height="36"/>
-                <TextBlock x:Name="ErrorText" Foreground="#C0392B" TextWrapping="Wrap" IsVisible="False"/>
+        Background="{DynamicResource MainBg}">
+    <StackPanel Margin="28,20,28,24">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <Image Source="/Resources/logo.png" Height="56"/>
+            <TextBlock Text="Чудо Обувь" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"
+                       VerticalAlignment="Center" Margin="12,0,0,0"/>
+        </StackPanel>
 
-                <Button x:Name="LoginButton" Content="Войти" Classes="accent" HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center" Height="40" Margin="0,10,0,0" Click="LoginButton_Click"/>
-                <Button x:Name="GuestButton" Content="Войти как гость" HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center" Height="36" Margin="0,4,0,0" Click="GuestButton_Click"/>
-            </StackPanel>
-        </Border>
-    </Grid>
+        <TextBlock Text="Вход в систему" FontSize="18" Foreground="{DynamicResource TextBrush}"
+                   HorizontalAlignment="Center" Margin="0,16,0,6"/>
+
+        <TextBlock Text="Логин" Foreground="{DynamicResource MutedBrush}" Margin="0,10,0,3"/>
+        <TextBox x:Name="tbLogin" Height="32" Padding="6,0" MaxLength="50"
+                 VerticalContentAlignment="Center" BorderBrush="{DynamicResource Accent}"/>
+
+        <TextBlock x:Name="tbError" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap"
+                   Margin="0,12,0,0" MinHeight="18"/>
+
+        <Button Content="Войти" Height="36" Margin="0,10,0,0" IsDefault="True"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Background="{DynamicResource Accent}" Foreground="White"
+                Click="BtnLogin_Click"/>
+
+        <Button Content="Войти как гость" Height="34" Margin="0,8,0,0"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Background="{DynamicResource AltBg}" Foreground="{DynamicResource TextBrush}"
+                Click="BtnGuest_Click"/>
+    </StackPanel>
 </Window>
 
-
-AuthWindow.axaml.cs
+Views/LoginWindow.axaml.cs
+using System;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using ChudoObuvAvalonia.Models;
-using ChudoObuvAvalonia.Services;
+using ChudoObuv.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
 
-namespace ChudoObuvAvalonia;
+namespace ChudoObuv.Views;
 
-public partial class AuthWindow : Window
+public partial class LoginWindow : Window
 {
-    public AuthWindow()
+    /// <summary>Пользователь, вошедший в систему (null = неавторизованный гость).</summary>
+    public static User? CurrentUser { get; private set; }
+
+    public LoginWindow()
     {
         InitializeComponent();
+        Opened += (_, _) => tbLogin.Focus();
     }
 
-    private void LoginButton_Click(object? sender, RoutedEventArgs e)
+    private void BtnLogin_Click(object? sender, RoutedEventArgs e)
     {
-        string login = LoginTB.Text?.Trim() ?? "";
-        if (string.IsNullOrWhiteSpace(login))
+        tbError.Text = "";
+        string login = (tbLogin.Text ?? "").Trim();
+
+        if (login.Length == 0)
         {
-            ShowError("Введите логин.");
+            tbError.Text = "Введите логин.";
             return;
         }
 
@@ -1118,97 +1080,149 @@ public partial class AuthWindow : Window
 
             if (user == null)
             {
-                ShowError("Пользователь с таким логином не найден.");
+                tbError.Text = "Пользователь с таким логином не найден.";
                 return;
             }
 
-            Session.Login(user);
-            var productsWin = new ProductsWindow(user);
-            productsWin.Show();
-            Close();
+            CurrentUser = user;
+            OpenMainWindow();
         }
         catch (Exception ex)
         {
             App.ResetDb();
-            ShowError("Ошибка подключения к БД:\n" + ex.GetBaseException().Message);
+            tbError.Text = "Ошибка подключения к базе данных: " + ex.Message;
         }
     }
 
-    private void GuestButton_Click(object? sender, RoutedEventArgs e)
+    private void BtnGuest_Click(object? sender, RoutedEventArgs e)
     {
-        Session.Logout();
-        try
-        {
-            App.Db.Products.Any();
-            var guestWin = new GuestWindow();
-            guestWin.Show();
-            Close();
-        }
-        catch (Exception ex)
-        {
-            App.ResetDb();
-            ShowError("Ошибка подключения к БД:\n" + ex.GetBaseException().Message);
-        }
+        CurrentUser = null; // Гость (неавторизованный пользователь)
+        OpenMainWindow();
     }
 
-    private void ShowError(string message)
+    private void OpenMainWindow()
     {
-        ErrorText.Text = message;
-        ErrorText.IsVisible = true;
+        var products = new Products();
+        if (Avalonia.Application.Current?.ApplicationLifetime
+            is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.MainWindow = products;
+        }
+        products.Show();
+        Close();
     }
 }
 
-
-#GuestWindow (Вывод каталога через ListBox)
-GuestWindow.axaml
+Views/Products.axaml
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="ChudoObuvAvalonia.GuestWindow"
-        Title="Чудо Обувь — Каталог товаров (гость)"
-        Width="1240" Height="740" MinWidth="800" MinHeight="500"
-        WindowStartupLocation="CenterScreen">
+        x:Class="ChudoObuv.Views.Products"
+        x:CompileBindings="False"
+        Title="Каталог товаров — Чудо Обувь"
+        Icon="/Resources/app.ico"
+        Height="820" Width="820" MinWidth="600" MinHeight="450"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource MainBg}">
     <DockPanel>
-        <!-- Шапка с логотипом -->
-        <Border DockPanel.Dock="Top" Background="#D2F6E7" BorderBrush="#70B2AF" BorderThickness="0,0,0,1" Padding="14,6">
-            <DockPanel LastChildFill="False">
-                <Image DockPanel.Dock="Left" Source="/Resources/logo.png" Height="56" Stretch="Uniform"/>
-                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" Margin="10,0,0,0">
-                    <TextBlock Text="Чудо Обувь" FontSize="22" FontWeight="Bold"/>
-                    <TextBlock Text="Каталог товаров" Foreground="#4F6B68"/>
+        <!-- Шапка с логотипом, названием и статусом авторизации -->
+        <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Accent}" Padding="14,8" Background="{DynamicResource AltBg}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Image Source="/Resources/logo.png" Height="50"/>
+                    <TextBlock Text="Чудо Обувь" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"
+                               VerticalAlignment="Center" Margin="10,0,0,0"/>
                 </StackPanel>
 
-                <Button DockPanel.Dock="Right" Content="Войти" Classes="accent" VerticalAlignment="Center" Click="Login_Click"/>
-                <TextBlock DockPanel.Dock="Right" Text="Вы вошли как гость" VerticalAlignment="Center" Foreground="#4F6B68" Margin="0,0,12,0"/>
-            </DockPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                    <TextBlock x:Name="tbUserStatus" Text="Гость" FontSize="14" Foreground="{DynamicResource TextBrush}"
+                               VerticalAlignment="Center"/>
+                    <Button Content="Выйти" Padding="12,5" Background="{DynamicResource Accent}" Foreground="White"
+                            Click="BtnLogout_Click"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
-        <!-- Вывод списка товаров через ListBox -->
-        <ListBox x:Name="ProductsList" Classes="productsList" Background="Transparent" BorderThickness="0" Margin="10">
+        <!-- Панель поиска, фильтрации и сортировки -->
+        <WrapPanel DockPanel.Dock="Top" Margin="14,10,14,6">
+            <TextBox x:Name="tbSearch" Width="200" Height="32" Margin="0,0,8,6"
+                     Watermark="Поиск..."
+                     VerticalContentAlignment="Center"
+                     ToolTip.Tip="Поиск по названию, составу, производителю, описанию"/>
+
+            <ComboBox x:Name="cbManufacturer" Width="160" Height="32" Margin="0,0,8,6"
+                      SelectionChanged="Filter_Changed"/>
+
+            <ComboBox x:Name="cbCategory" Width="140" Height="32" Margin="0,0,8,6"
+                      SelectionChanged="Filter_Changed"/>
+
+            <ComboBox x:Name="cbSort" Width="170" Height="32" Margin="0,0,8,6"
+                      SelectionChanged="Filter_Changed"/>
+
+            <TextBlock x:Name="tbCount" VerticalAlignment="Center" Margin="8,0,0,6"
+                       FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}"/>
+        </WrapPanel>
+
+        <!-- Панель действий: корзина, заказы, удаление -->
+        <WrapPanel DockPanel.Dock="Top" Margin="14,0,14,10">
+            <Button x:Name="btnAddToCart" Content="В корзину" Height="32" Margin="0,0,8,4"
+                    Background="{DynamicResource Accent}" Foreground="White"
+                    Click="BtnAddToCart_Click"/>
+
+            <Button x:Name="btnOpenCart" Content="Корзина (0)" Height="32" Margin="0,0,8,4"
+                    Background="{DynamicResource AltBg}" Foreground="{DynamicResource TextBrush}"
+                    Click="BtnOpenCart_Click"/>
+
+            <Button x:Name="btnOrders" Content="Список заказов" Height="32" Margin="0,0,8,4"
+                    Background="{DynamicResource AltBg}" Foreground="{DynamicResource TextBrush}"
+                    Click="BtnOrders_Click"/>
+
+            <Button x:Name="btnDelete" Content="Удалить товар" Height="32" Margin="0,0,8,4"
+                    Background="{DynamicResource ErrorBrush}" Foreground="White"
+                    Click="BtnDelete_Click"/>
+        </WrapPanel>
+
+        <!-- Список товаров (ListBox с DataTemplate и подсветкой #FF8080 при остатке <= 3) -->
+        <ListBox x:Name="lbProducts" Margin="14,0,14,14" Background="Transparent"
+                 SelectionMode="Single">
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <WrapPanel />
+                    <StackPanel Spacing="8"/>
                 </ItemsPanelTemplate>
             </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Border Classes="card" Width="580" Margin="6" Background="{Binding CardBackground}">
-                        <Grid ColumnDefinitions="136,*">
-                            <Border Grid.Column="0" Background="White" BorderBrush="#D2F6E7" BorderThickness="1"
-                                    CornerRadius="2" Width="124" Height="124" VerticalAlignment="Top" HorizontalAlignment="Left">
-                                <Image Source="{Binding ProductBitmap}" Stretch="Uniform" Margin="4"/>
+                    <Border Margin="0,0,0,2" Padding="12" CornerRadius="2"
+                            Background="{Binding CardBackground}"
+                            BorderBrush="{DynamicResource Accent}" BorderThickness="1">
+                        <Grid ColumnDefinitions="136,*,Auto">
+                            <!-- Фото товара -->
+                            <Border Grid.Column="0" Background="White" BorderThickness="1"
+                                    BorderBrush="{DynamicResource Accent}"
+                                    Width="124" Height="124" VerticalAlignment="Top" HorizontalAlignment="Left">
+                                <Image Source="{Binding ImageBitmap}" Stretch="Uniform" Margin="4"/>
                             </Border>
 
-                            <StackPanel Grid.Column="1" Spacing="3" Margin="8,0,0,0">
-                                <TextBlock Text="{Binding ProductName}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding CategoryText}" Foreground="#4F6B68"/>
-                                <TextBlock Text="{Binding ManufacturerText}" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding CompositionText}" ToolTip.Tip="{Binding Description}" TextWrapping="Wrap" MaxHeight="40"/>
-                                <TextBlock Text="{Binding SizesDisplay}" TextWrapping="Wrap"/>
+                            <!-- Описание модели -->
+                            <StackPanel Grid.Column="1" Margin="14,0,12,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ProductName}" FontSize="18" FontWeight="Bold"
+                                           Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="{Binding CategoryText}" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                                <TextBlock Text="{Binding ManufacturerText}" Margin="0,4,0,0"
+                                           Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="{Binding CompositionText}" MaxHeight="40" Margin="0,2,0,0"
+                                           TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}"
+                                           ToolTip.Tip="{Binding Description}"/>
+                                <TextBlock Text="{Binding SizesDisplayText}" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource TextBrush}"/>
+                            </StackPanel>
 
-                                <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
-                                    <TextBlock Text="{Binding CountText}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding PriceText}" Grid.Column="1" FontSize="20" FontWeight="Bold"/>
-                                </Grid>
+                            <!-- Цена и остаток -->
+                            <StackPanel Grid.Column="2" MinWidth="130" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                <TextBlock Text="{Binding PriceText}" FontSize="22" FontWeight="Bold"
+                                           HorizontalAlignment="Right" Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="{Binding StockCountDisplay}" HorizontalAlignment="Right"
+                                           Margin="0,6,0,0" Foreground="{DynamicResource MutedBrush}"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -1218,834 +1232,608 @@ GuestWindow.axaml
     </DockPanel>
 </Window>
 
-
-GuestWindow.axaml.cs
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using ChudoObuvAvalonia.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
-
-namespace ChudoObuvAvalonia;
-
-public partial class GuestWindow : Window
-{
-    public GuestWindow()
-    {
-        InitializeComponent();
-        LoadData();
-    }
-
-    private void LoadData()
-    {
-        try
-        {
-            var list = App.Db.Products
-                .Include(p => p.Manufacturer)
-                .Include(p => p.Subcategory).ThenInclude(s => s.Category)
-                .Include(p => p.StockItems)
-                .OrderBy(p => p.ProductId)
-                .ToList();
-
-            ProductsList.ItemsSource = list;
-        }
-        catch { }
-    }
-
-    private void Login_Click(object? sender, RoutedEventArgs e)
-    {
-        new AuthWindow().Show();
-        Close();
-    }
-}
-
-
-#ProductsWindow (Каталог товаров через ListBox с поиском, фильтрами, сортировкой и добавлением в заказ)
-ProductsWindow.axaml
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="ChudoObuvAvalonia.ProductsWindow"
-        Title="Чудо Обувь — Каталог товаров"
-        Width="1280" Height="800" MinWidth="900" MinHeight="560"
-        WindowStartupLocation="CenterScreen">
-    <DockPanel>
-        <!-- Шапка -->
-        <Border DockPanel.Dock="Top" Background="#D2F6E7" BorderBrush="#70B2AF" BorderThickness="0,0,0,1" Padding="14,6">
-            <DockPanel LastChildFill="False">
-                <Image DockPanel.Dock="Left" Source="/Resources/logo.png" Height="56" Stretch="Uniform"/>
-                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center" Margin="10,0,24,0">
-                    <TextBlock Text="Чудо Обувь" FontSize="22" FontWeight="Bold"/>
-                    <TextBlock Text="Каталог товаров" Foreground="#4F6B68"/>
-                </StackPanel>
-
-                <Button DockPanel.Dock="Right" Content="Выйти" Classes="light" VerticalAlignment="Center" Click="Logout_Click"/>
-                <Button DockPanel.Dock="Right" x:Name="CartBtn" Content="Мой заказ (0)" Classes="accent" VerticalAlignment="Center" Click="Cart_Click"/>
-                <Button DockPanel.Dock="Right" x:Name="OrdersBtn" Content="Заказы" Classes="light" VerticalAlignment="Center" Click="Orders_Click"/>
-                
-                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,14,0">
-                    <TextBlock x:Name="UserNameText" FontWeight="SemiBold" HorizontalAlignment="Right"/>
-                    <TextBlock x:Name="UserRoleText" HorizontalAlignment="Right" FontSize="12" Foreground="#4F6B68"/>
-                </StackPanel>
-            </DockPanel>
-        </Border>
-
-        <!-- Фильтры -->
-        <Border DockPanel.Dock="Top" Classes="panel" Margin="10,10,10,0">
-            <Grid ColumnDefinitions="2*,*,*,*">
-                <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                    <TextBlock Text="Поиск" Classes="fieldLabel"/>
-                    <TextBox x:Name="SearchBox"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Margin="0,0,10,0">
-                    <TextBlock Text="Категория" Classes="fieldLabel"/>
-                    <ComboBox x:Name="CategoryBox" HorizontalAlignment="Stretch"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" Margin="0,0,10,0">
-                    <TextBlock Text="Производитель" Classes="fieldLabel"/>
-                    <ComboBox x:Name="ManufacturerBox" HorizontalAlignment="Stretch"/>
-                </StackPanel>
-                <StackPanel Grid.Column="3">
-                    <TextBlock Text="Сортировка" Classes="fieldLabel"/>
-                    <ComboBox x:Name="SortBox" HorizontalAlignment="Stretch"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Каталог товаров через ListBox -->
-        <Grid>
-            <ListBox x:Name="ProductsList" Classes="productsList" Background="Transparent" BorderThickness="0" Margin="10">
-                <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel />
-                    </ItemsPanelTemplate>
-                </ListBox.ItemsPanel>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Border Classes="card" Width="580" Margin="6" Background="{Binding CardBackground}">
-                            <Grid ColumnDefinitions="136,*">
-                                <Border Grid.Column="0" Background="White" BorderBrush="#D2F6E7" BorderThickness="1"
-                                        CornerRadius="2" Width="124" Height="124" VerticalAlignment="Top" HorizontalAlignment="Left">
-                                    <Image Source="{Binding ProductBitmap}" Stretch="Uniform" Margin="4"/>
-                                </Border>
-
-                                <StackPanel Grid.Column="1" Spacing="3" Margin="8,0,0,0">
-                                    <TextBlock Text="{Binding ProductName}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding CategoryText}" Foreground="#4F6B68"/>
-                                    <TextBlock Text="{Binding ManufacturerText}" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding CompositionText}" ToolTip.Tip="{Binding Description}" TextWrapping="Wrap" MaxHeight="40"/>
-                                    <TextBlock Text="{Binding SizesDisplay}" TextWrapping="Wrap"/>
-
-                                    <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
-                                        <TextBlock Text="{Binding CountText}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding PriceText}" Grid.Column="1" FontSize="20" FontWeight="Bold"/>
-                                    </Grid>
-
-                                    <!-- Панель добавления в заказ -->
-                                    <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0" IsVisible="{Binding CanOrder}">
-                                        <ComboBox ItemsSource="{Binding AvailableStock}"
-                                                  SelectedItem="{Binding SelectedStockItem, Mode=TwoWay}"
-                                                  HorizontalAlignment="Stretch">
-                                            <ComboBox.ItemTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Text="{Binding SizeDisplay}"/>
-                                                </DataTemplate>
-                                            </ComboBox.ItemTemplate>
-                                        </ComboBox>
-                                        <Button Grid.Column="1" Content="Добавить в заказ" Classes="accent"
-                                                Margin="8,0,0,0" Click="AddButton_Click"/>
-                                    </Grid>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-
-            <TextBlock x:Name="EmptyText" Text="Товары не найдены." FontSize="16" Foreground="#4F6B68"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="False"/>
-        </Grid>
-    </DockPanel>
-</Window>
-
-
-ProductsWindow.axaml.cs
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using ChudoObuvAvalonia.Models;
-using ChudoObuvAvalonia.Services;
-using Microsoft.EntityFrameworkCore;
+Views/Products.axaml.cs
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using ChudoObuv.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace ChudoObuvAvalonia;
+namespace ChudoObuv.Views;
 
-public partial class ProductsWindow : Window
+public partial class Products : Window
 {
-    private const string AllCategories = "Все категории";
-    private const string AllManufacturers = "Все производители";
-
-    private static readonly string[] SortModes =
-    {
-        "Без сортировки",
-        "Цена: по возрастанию",
-        "Цена: по убыванию",
-        "Название: А — Я",
-        "Название: Я — А",
-        "Остаток: по возрастанию",
-        "Остаток: по убыванию"
-    };
-
     private List<Product> _all = new();
     private bool _ready;
 
-    public ProductsWindow()
-    {
-        InitializeComponent();
-    }
-
-    public ProductsWindow(User user)
+    public Products()
     {
         InitializeComponent();
 
-        UserNameText.Text = user.Fio;
-        UserRoleText.Text = user.Role?.RoleName ?? "";
-        OrdersBtn.IsVisible = Session.CanManageOrders;
-
-        Cart.Changed += UpdateCartText;
-        Closing += (_, _) => Cart.Changed -= UpdateCartText;
-        UpdateCartText();
-
-        SearchBox.PropertyChanged += (_, e) =>
+        tbSearch.PropertyChanged += (_, e) =>
         {
-            if (e.Property == TextBox.TextProperty && _ready) Apply();
+            if (e.Property == TextBox.TextProperty) ShowProducts();
         };
-        CategoryBox.SelectionChanged += (_, _) => { if (_ready) Apply(); };
-        ManufacturerBox.SelectionChanged += (_, _) => { if (_ready) Apply(); };
-        SortBox.SelectionChanged += (_, _) => { if (_ready) Apply(); };
 
+        ApplyUserRole();
         LoadData();
     }
 
-    private void UpdateCartText()
+    private void ApplyUserRole()
     {
-        CartBtn.Content = $"Мой заказ ({Cart.TotalCount})";
+        var user = LoginWindow.CurrentUser;
+        if (user == null)
+        {
+            tbUserStatus.Text = "Гость";
+            btnOrders.IsVisible = false;
+            btnDelete.IsVisible = false;
+        }
+        else
+        {
+            tbUserStatus.Text = $"{user.Fio} ({user.Role.RoleName})";
+            int roleId = user.RoleId;
+            btnOrders.IsVisible = (roleId == 1 || roleId == 2); // Админ и Менеджер
+            btnDelete.IsVisible = (roleId == 1);                // Только Админ
+        }
+
+        UpdateCartButton();
+    }
+
+    public void UpdateCartButton()
+    {
+        btnOpenCart.Content = $"Корзина ({CartManager.TotalCount})";
     }
 
     public void LoadData()
     {
-        try
-        {
-            _all = App.Db.Products
-                .Include(p => p.Manufacturer)
-                .Include(p => p.Subcategory).ThenInclude(s => s.Category)
-                .Include(p => p.StockItems)
-                .OrderBy(p => p.ProductId)
-                .ToList();
+        _ready = false;
 
-            foreach (var p in _all)
-            {
-                if (p.AvailableStock.Count > 0)
-                    p.SelectedStockItem = p.AvailableStock[0];
-            }
-        }
-        catch { return; }
+        _all = App.Db.Products
+            .Include(x => x.Manufacturer)
+            .Include(x => x.Subcategory).ThenInclude(s => s.Category)
+            .Include(x => x.StockItems)
+            .OrderBy(x => x.ProductId)
+            .ToList();
 
-        if (!_ready)
-        {
-            CategoryBox.ItemsSource = new[] { AllCategories }
-                .Concat(_all.Select(p => p.CategoryName).Distinct().OrderBy(n => n)).ToList();
-            ManufacturerBox.ItemsSource = new[] { AllManufacturers }
-                .Concat(_all.Select(p => p.Manufacturer?.ManufacturerName ?? "").Distinct().OrderBy(n => n)).ToList();
-            SortBox.ItemsSource = SortModes;
-
-            CategoryBox.SelectedIndex = 0;
-            ManufacturerBox.SelectedIndex = 0;
-            SortBox.SelectedIndex = 0;
-            _ready = true;
-        }
-
-        Apply();
+        FillCombos();
+        _ready = true;
+        ShowProducts();
     }
 
-    private void Apply()
+    private void FillCombos()
     {
-        IEnumerable<Product> items = _all;
+        cbManufacturer.ItemsSource = ProductTools.ComboItems(_all.Select(p => p.Manufacturer.ManufacturerName));
+        cbCategory.ItemsSource = ProductTools.ComboItems(_all.Select(p => p.CategoryName));
+        cbSort.ItemsSource = ProductTools.SortNames;
 
-        var text = SearchBox.Text?.Trim() ?? "";
-        if (text.Length > 0)
+        cbManufacturer.SelectedIndex = 0;
+        cbCategory.SelectedIndex = 0;
+        cbSort.SelectedIndex = 0;
+    }
+
+    private void ShowProducts()
+    {
+        if (!_ready) return;
+
+        var list = _all;
+        list = ProductTools.Search(list, tbSearch.Text);
+        list = ProductTools.ByManufacturer(list, cbManufacturer.SelectedItem as string);
+        list = ProductTools.ByCategory(list, cbCategory.SelectedItem as string);
+        list = ProductTools.Sort(list, cbSort.SelectedItem as string);
+
+        lbProducts.ItemsSource = list;
+        tbCount.Text = $"Отображено: {list.Count} из {_all.Count}";
+    }
+
+    private void Filter_Changed(object? sender, SelectionChangedEventArgs e) => ShowProducts();
+
+    private async void BtnAddToCart_Click(object? sender, RoutedEventArgs e)
+    {
+        var product = lbProducts.SelectedItem as Product;
+        if (product == null)
         {
-            items = items.Where(p =>
-                Contains(p.ProductName, text) ||
-                Contains(p.Description, text) ||
-                Contains(p.Composition, text) ||
-                Contains(p.Manufacturer?.ManufacturerName, text) ||
-                Contains(p.Subcategory?.SubcategoryName, text) ||
-                Contains(p.CategoryName, text));
+            await Dialogs.ShowMessage(this, "Выберите товар в списке для добавления в корзину.");
+            return;
         }
 
-        if (CategoryBox.SelectedItem is string cat && cat != AllCategories)
-            items = items.Where(p => p.CategoryName == cat);
-
-        if (ManufacturerBox.SelectedItem is string man && man != AllManufacturers)
-            items = items.Where(p => p.Manufacturer?.ManufacturerName == man);
-
-        items = SortBox.SelectedIndex switch
+        var stock = product.AvailableStock.FirstOrDefault();
+        if (stock == null)
         {
-            1 => items.OrderBy(p => p.Price),
-            2 => items.OrderByDescending(p => p.Price),
-            3 => items.OrderBy(p => p.ProductName, StringComparer.CurrentCultureIgnoreCase),
-            4 => items.OrderByDescending(p => p.ProductName, StringComparer.CurrentCultureIgnoreCase),
-            5 => items.OrderBy(p => p.TotalQuantity),
-            6 => items.OrderByDescending(p => p.TotalQuantity),
-            _ => items
-        };
-
-        var list = items.ToList();
-        ProductsList.ItemsSource = list;
-        EmptyText.IsVisible = list.Count == 0;
-    }
-
-    private static bool Contains(string? source, string text)
-        => source != null && source.Contains(text, StringComparison.CurrentCultureIgnoreCase);
-
-    private void AddButton_Click(object? sender, RoutedEventArgs e)
-    {
-        if ((sender as Button)?.DataContext is Product product)
-        {
-            var item = product.SelectedStockItem ?? product.AvailableStock.FirstOrDefault();
-            if (item == null) return;
-
-            Cart.TryAdd(item, out _);
-            UpdateCartText();
+            await Dialogs.ShowMessage(this, "Данного товара нет в наличии.");
+            return;
         }
+
+        CartManager.Add(stock, 1);
+        UpdateCartButton();
+        await Dialogs.ShowMessage(this, $"Товар «{product.ProductName}» (размер {stock.SizeText}) добавлен в корзину!");
     }
 
-    private async void Cart_Click(object? sender, RoutedEventArgs e)
+    private async void BtnOpenCart_Click(object? sender, RoutedEventArgs e)
     {
-        var win = new CartWindow();
-        await win.ShowDialog(this);
-        if (win.OrderCreated)
-            LoadData();
-    }
-
-    private async void Orders_Click(object? sender, RoutedEventArgs e)
-    {
-        var win = new OrdersWindow();
-        await win.ShowDialog(this);
+        var cartWindow = new CartWindow();
+        await cartWindow.ShowDialog(this);
+        UpdateCartButton();
         LoadData();
     }
 
-    private void Logout_Click(object? sender, RoutedEventArgs e)
+    private async void BtnOrders_Click(object? sender, RoutedEventArgs e)
     {
-        Cart.Clear();
-        Session.Logout();
-        App.ResetDb();
-        new AuthWindow().Show();
+        var ordersWindow = new OrdersWindow();
+        await ordersWindow.ShowDialog(this);
+        LoadData();
+    }
+
+    private async void BtnDelete_Click(object? sender, RoutedEventArgs e)
+    {
+        var product = lbProducts.SelectedItem as Product;
+        if (product == null)
+        {
+            await Dialogs.ShowMessage(this, "Выберите товар для удаления.");
+            return;
+        }
+
+        if (await ProductTools.DeleteAsync(this, product))
+        {
+            LoadData();
+            await Dialogs.ShowMessage(this, "Товар успешно удален.");
+        }
+    }
+
+    private void BtnLogout_Click(object? sender, RoutedEventArgs e)
+    {
+        var login = new LoginWindow();
+        if (Avalonia.Application.Current?.ApplicationLifetime
+            is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.MainWindow = login;
+        }
+        login.Show();
         Close();
     }
 }
 
-
-#CartWindow (Оформление заказа через ListBox)
-CartWindow.axaml
+Views/CartWindow.axaml
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="ChudoObuvAvalonia.CartWindow"
-        Title="Чудо Обувь — Оформление заказа"
-        Width="880" Height="560" MinWidth="700" MinHeight="420"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto">
-        <TextBlock Grid.Row="0" Text="Оформление заказа" Classes="heading"/>
-
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" Margin="0,0,0,10">
-            <TextBlock Grid.Column="0" Text="Клиент:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <TextBlock x:Name="CustomerText" Grid.Column="1" VerticalAlignment="Center"/>
-            <ComboBox x:Name="CustomerBox" Grid.Column="1" IsVisible="False" HorizontalAlignment="Stretch"/>
-        </Grid>
-
-        <!-- Таблица позиций заказа через ListBox -->
-        <Border Grid.Row="2" BorderBrush="#70B2AF" BorderThickness="1" CornerRadius="2">
-            <DockPanel>
-                <!-- Шапка таблицы -->
-                <Border DockPanel.Dock="Top" Background="#D2F6E7" Padding="12,8" BorderBrush="#70B2AF" BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="*,90,110,140,120,90">
-                        <TextBlock Grid.Column="0" Text="Товар" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="1" Text="Размер" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="2" Text="Цена" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="3" Text="Количество" FontWeight="Bold" HorizontalAlignment="Center"/>
-                        <TextBlock Grid.Column="4" Text="Сумма" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="5" Text="Действие" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    </Grid>
-                </Border>
-
-                <!-- Строки таблицы -->
-                <ListBox x:Name="LinesList" Background="Transparent" BorderThickness="0">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid ColumnDefinitions="*,90,110,140,120,90" Margin="4,2">
-                                <TextBlock Grid.Column="0" Text="{Binding ProductName}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                <TextBlock Grid.Column="1" Text="{Binding SizeText}" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="{Binding UnitPrice, StringFormat={}{0:N0} ₽}" VerticalAlignment="Center"/>
-                                <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="−" Padding="8,1" Click="Minus_Click"/>
-                                    <TextBlock Text="{Binding Quantity}" Width="32" TextAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                    <Button Content="+" Padding="8,1" Click="Plus_Click"/>
-                                </StackPanel>
-                                <TextBlock Grid.Column="4" Text="{Binding Sum, StringFormat={}{0:N0} ₽}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                <Button Grid.Column="5" Content="Удалить" Padding="6,1" HorizontalAlignment="Center" Click="Remove_Click"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
+        x:Class="ChudoObuv.Views.CartWindow"
+        x:CompileBindings="False"
+        Title="Корзина заказов — Чудо Обувь"
+        Icon="/Resources/app.ico"
+        Height="550" Width="680" MinWidth="500" MinHeight="350"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource MainBg}">
+    <DockPanel Margin="18">
+        <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Accent}" Padding="0,0,0,10">
+            <TextBlock Text="Корзина покупок" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
         </Border>
 
-        <DockPanel Grid.Row="3" Margin="0,12,0,0" LastChildFill="False">
-            <TextBlock x:Name="TotalText" DockPanel.Dock="Left" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button DockPanel.Dock="Right" Content="Закрыть" Click="Close_Click"/>
-            <Button DockPanel.Dock="Right" x:Name="ConfirmBtn" Content="Оформить заказ" Classes="accent" Click="Confirm_Click"/>
-            <Button DockPanel.Dock="Right" Content="Очистить" Click="Clear_Click"/>
-        </DockPanel>
-    </Grid>
+        <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Accent}" Padding="0,14,0,0" Margin="0,10,0,0">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock x:Name="tbTotalSum" Text="Итого: 0 ₽" FontSize="18" FontWeight="Bold"
+                           VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
+
+                <Button Grid.Column="1" Content="Очистить" Margin="0,0,8,0" Padding="12,6"
+                        Background="{DynamicResource AltBg}" Foreground="{DynamicResource TextBrush}"
+                        Click="BtnClear_Click"/>
+
+                <Button Grid.Column="2" Content="Оформить заказ" Padding="16,6"
+                        Background="{DynamicResource Accent}" Foreground="White" FontWeight="Bold"
+                        Click="BtnCheckout_Click"/>
+            </Grid>
+        </Border>
+
+        <ListBox x:Name="lbCartItems" Margin="0,10,0,0" Background="Transparent">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="0,0,0,6" Padding="10" CornerRadius="2"
+                            Background="White" BorderBrush="{DynamicResource Accent}" BorderThickness="1">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ProductName}" FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="{Binding DisplayText}" Margin="0,4,0,0"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                                <Button Content="-" Width="28" Height="28" Padding="0"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                        Tag="{Binding}" Click="BtnMinus_Click"/>
+                                <TextBlock Text="{Binding Quantity}" VerticalAlignment="Center" Margin="8,0"
+                                           FontWeight="Bold"/>
+                                <Button Content="+" Width="28" Height="28" Padding="0"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                        Tag="{Binding}" Click="BtnPlus_Click"/>
+                            </StackPanel>
+
+                            <Button Grid.Column="2" Content="Удалить" Padding="8,4"
+                                    Background="{DynamicResource AltBg}" Foreground="{DynamicResource TextBrush}"
+                                    Tag="{Binding}" Click="BtnRemoveItem_Click"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
 </Window>
 
-
-CartWindow.axaml.cs
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using ChudoObuvAvalonia.Models;
-using ChudoObuvAvalonia.Services;
+Views/CartWindow.axaml.cs
 using System;
 using System.Linq;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using ChudoObuv.Models;
 
-namespace ChudoObuvAvalonia;
+namespace ChudoObuv.Views;
 
 public partial class CartWindow : Window
 {
-    public bool OrderCreated { get; private set; }
-
     public CartWindow()
     {
         InitializeComponent();
-        LinesList.ItemsSource = Cart.Lines;
-        Cart.Changed += UpdateTotal;
-        Closing += (_, _) => Cart.Changed -= UpdateTotal;
+        RefreshCart();
+    }
 
-        if (Session.CanManageOrders)
+    private void RefreshCart()
+    {
+        lbCartItems.ItemsSource = null;
+        lbCartItems.ItemsSource = CartManager.Items.ToList();
+        tbTotalSum.Text = $"Итого: {CartManager.TotalSum:N0} ₽ ({CartManager.TotalCount} шт.)";
+    }
+
+    private void BtnPlus_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is CartItem item)
         {
-            CustomerText.IsVisible = false;
-            CustomerBox.IsVisible = true;
-            var users = App.Db.Users.OrderBy(u => u.LastName).ThenBy(u => u.FirstName).ToList();
-            CustomerBox.ItemsSource = users;
-            CustomerBox.ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<User>((u, _) =>
-                new TextBlock { Text = u.Fio });
-            CustomerBox.SelectedItem = users.FirstOrDefault(u => u.UserId == Session.UserId);
+            if (item.Quantity < item.StockItem.Quantity)
+            {
+                item.Quantity++;
+                RefreshCart();
+            }
+        }
+    }
+
+    private void BtnMinus_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is CartItem item)
+        {
+            if (item.Quantity > 1)
+            {
+                item.Quantity--;
+            }
+            else
+            {
+                CartManager.Items.Remove(item);
+            }
+            RefreshCart();
+        }
+    }
+
+    private void BtnRemoveItem_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is CartItem item)
+        {
+            CartManager.Items.Remove(item);
+            RefreshCart();
+        }
+    }
+
+    private void BtnClear_Click(object? sender, RoutedEventArgs e)
+    {
+        CartManager.Clear();
+        RefreshCart();
+    }
+
+    private async void BtnCheckout_Click(object? sender, RoutedEventArgs e)
+    {
+        if (CartManager.Items.Count == 0)
+        {
+            await Dialogs.ShowMessage(this, "Корзина пуста. Добавьте товары перед оформлением.");
+            return;
+        }
+
+        int userId;
+        if (LoginWindow.CurrentUser != null)
+        {
+            userId = LoginWindow.CurrentUser.UserId;
         }
         else
         {
-            CustomerText.Text = Session.Fio;
-        }
-
-        UpdateTotal();
-    }
-
-    private void UpdateTotal()
-    {
-        TotalText.Text = $"Итого: {Cart.TotalSum:N0} ₽  ({Cart.TotalCount} пар)";
-        ConfirmBtn.IsEnabled = Cart.Lines.Count > 0;
-    }
-
-    private void Plus_Click(object? sender, RoutedEventArgs e)
-    {
-        if ((sender as Button)?.DataContext is CartLine line)
-            Cart.TryChangeQuantity(line, 1, out _);
-    }
-
-    private void Minus_Click(object? sender, RoutedEventArgs e)
-    {
-        if ((sender as Button)?.DataContext is CartLine line)
-            Cart.TryChangeQuantity(line, -1, out _);
-    }
-
-    private void Remove_Click(object? sender, RoutedEventArgs e)
-    {
-        if ((sender as Button)?.DataContext is CartLine line)
-            Cart.Remove(line);
-    }
-
-    private void Clear_Click(object? sender, RoutedEventArgs e) => Cart.Clear();
-
-    private void Close_Click(object? sender, RoutedEventArgs e) => Close();
-
-    private void Confirm_Click(object? sender, RoutedEventArgs e)
-    {
-        if (Cart.Lines.Count == 0) return;
-
-        User? customer;
-        if (Session.CanManageOrders)
-        {
-            customer = CustomerBox.SelectedItem as User;
-            if (customer == null) return;
-        }
-        else
-        {
-            customer = App.Db.Users.Find(Session.UserId);
-            if (customer == null) return;
+            // Для неавторизованного гостя заказ привязывается к первому клиенту в базе
+            var defaultClient = App.Db.Users.FirstOrDefault(u => u.RoleId == 3) ?? App.Db.Users.First();
+            userId = defaultClient.UserId;
         }
 
         try
         {
-            var db = App.Db;
-            foreach (var line in Cart.Lines)
-                db.Entry(line.Item).Reload();
-
-            foreach (var line in Cart.Lines)
-            {
-                if (line.Quantity > line.Item.Quantity)
-                    return;
-            }
-
             var order = new Order
             {
                 OrderDate = DateOnly.FromDateTime(DateTime.Today),
-                UserId = customer.UserId,
-                User = customer
+                UserId = userId
             };
 
-            foreach (var line in Cart.Lines)
+            App.Db.Orders.Add(order);
+            App.Db.SaveChanges();
+
+            foreach (var cartItem in CartManager.Items)
             {
-                order.OrderItems.Add(new OrderItem
+                var orderItem = new OrderItem
                 {
-                    StockItemId = line.Item.StockItemId,
-                    StockItem = line.Item,
-                    Quantity = line.Quantity,
-                    UnitPrice = line.UnitPrice
-                });
-                line.Item.Quantity -= line.Quantity;
+                    OrderId = order.OrderId,
+                    StockItemId = cartItem.StockItem.StockItemId,
+                    Quantity = cartItem.Quantity,
+                    UnitPrice = cartItem.UnitPrice
+                };
+                App.Db.OrderItems.Add(orderItem);
+
+                // Уменьшаем количество на складе
+                var stock = App.Db.StockItems.Find(cartItem.StockItem.StockItemId);
+                if (stock != null)
+                {
+                    stock.Quantity = Math.Max(0, stock.Quantity - cartItem.Quantity);
+                }
             }
 
-            db.Orders.Add(order);
-            db.SaveChanges();
+            App.Db.SaveChanges();
+            CartManager.Clear();
+            RefreshCart();
 
-            OrderCreated = true;
-            Cart.Clear();
+            await Dialogs.ShowMessage(this, $"Заказ №{order.OrderId} успешно оформлен!");
             Close();
         }
-        catch
+        catch (Exception ex)
         {
-            App.ResetDb();
+            await Dialogs.ShowMessage(this, "Ошибка сохранения заказа: " + ex.Message, "Ошибка");
         }
     }
 }
 
-
-#OrdersWindow (Список заказов и состав через ListBox)
-OrdersWindow.axaml
+Views/OrdersWindow.axaml
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="ChudoObuvAvalonia.OrdersWindow"
-        Title="Чудо Обувь — Заказы"
-        Width="1100" Height="640" MinWidth="860" MinHeight="460"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="16" RowDefinitions="Auto,Auto,*">
-        <TextBlock Grid.Row="0" Text="Заказы" Classes="heading"/>
-
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-            <Button x:Name="NewBtn" Content="Новый заказ" Classes="accent" Click="NewBtn_Click"/>
-            <Button x:Name="EditBtn" Content="Редактировать" Click="EditBtn_Click"/>
-            <Button x:Name="DeleteBtn" Content="Удалить" Click="DeleteBtn_Click"/>
-            <Button Content="Закрыть" Click="Close_Click"/>
-        </StackPanel>
-
-        <Grid Grid.Row="2" ColumnDefinitions="1.3*,14,*">
-            <!-- Список заказов через ListBox -->
-            <Border Grid.Column="0" BorderBrush="#70B2AF" BorderThickness="1" CornerRadius="2">
-                <DockPanel>
-                    <Border DockPanel.Dock="Top" Background="#D2F6E7" Padding="10,6" BorderBrush="#70B2AF" BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="45,95,*,45,90">
-                            <TextBlock Grid.Column="0" Text="№" FontWeight="Bold"/>
-                            <TextBlock Grid.Column="1" Text="Дата" FontWeight="Bold"/>
-                            <TextBlock Grid.Column="2" Text="ФИО клиента" FontWeight="Bold"/>
-                            <TextBlock Grid.Column="3" Text="Пар" FontWeight="Bold"/>
-                            <TextBlock Grid.Column="4" Text="Сумма" FontWeight="Bold"/>
-                        </Grid>
-                    </Border>
-                    <ListBox x:Name="OrdersList" Background="Transparent" BorderThickness="0"
-                             SelectionChanged="OrdersList_SelectionChanged">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid ColumnDefinitions="45,95,*,45,90" Margin="0,2">
-                                    <TextBlock Grid.Column="0" Text="{Binding OrderId}" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding OrderDate, StringFormat={}{0:dd.MM.yyyy}}" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding CustomerFio}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding ItemsCount}" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="4" Text="{Binding TotalText}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </DockPanel>
-            </Border>
-
-            <!-- Детали заказа через ListBox -->
-            <Grid Grid.Column="2" RowDefinitions="Auto,*,Auto">
-                <TextBlock x:Name="DetailsTitle" Grid.Row="0" Text="Состав заказа" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                <Border Grid.Row="1" BorderBrush="#70B2AF" BorderThickness="1" CornerRadius="2">
-                    <DockPanel>
-                        <Border DockPanel.Dock="Top" Background="#D2F6E7" Padding="10,6" BorderBrush="#70B2AF" BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="*,55,55,80,85">
-                                <TextBlock Grid.Column="0" Text="Товар" FontWeight="Bold"/>
-                                <TextBlock Grid.Column="1" Text="Разм." FontWeight="Bold"/>
-                                <TextBlock Grid.Column="2" Text="Кол." FontWeight="Bold"/>
-                                <TextBlock Grid.Column="3" Text="Цена" FontWeight="Bold"/>
-                                <TextBlock Grid.Column="4" Text="Сумма" FontWeight="Bold"/>
-                            </Grid>
-                        </Border>
-                        <ListBox x:Name="ItemsList" Background="Transparent" BorderThickness="0">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid ColumnDefinitions="*,55,55,80,85" Margin="0,2">
-                                        <TextBlock Grid.Column="0" Text="{Binding ProductName}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding Quantity}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding PriceText}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="4" Text="{Binding SumText}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </DockPanel>
-                </Border>
-                <TextBlock x:Name="TotalText" Grid.Row="2" FontSize="18" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,8,0,0"/>
+        x:Class="ChudoObuv.Views.OrdersWindow"
+        x:CompileBindings="False"
+        Title="Управление заказами — Чудо Обувь"
+        Icon="/Resources/app.ico"
+        Height="650" Width="800" MinWidth="600" MinHeight="400"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource MainBg}">
+    <DockPanel Margin="18">
+        <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Accent}" Padding="0,0,0,10">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Список заказов" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="btnEditOrder" Content="Редактировать заказ" Padding="12,5"
+                            Background="{DynamicResource Accent}" Foreground="White"
+                            Click="BtnEditOrder_Click"/>
+                    <Button x:Name="btnDeleteOrder" Content="Удалить заказ" Padding="12,5"
+                            Background="{DynamicResource ErrorBrush}" Foreground="White"
+                            Click="BtnDeleteOrder_Click"/>
+                </StackPanel>
             </Grid>
+        </Border>
+
+        <Grid ColumnDefinitions="*,12,*">
+            <!-- Список всех заказов -->
+            <DockPanel Grid.Column="0">
+                <TextBlock DockPanel.Dock="Top" Text="Заказы:" FontWeight="SemiBold" Margin="0,8,0,6"
+                           Foreground="{DynamicResource MutedBrush}"/>
+                <ListBox x:Name="lbOrders" Background="Transparent" SelectionChanged="LbOrders_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,6" Padding="10" CornerRadius="2"
+                                    Background="White" BorderBrush="{DynamicResource Accent}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding SummaryText}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{Binding CustomerFio}" Margin="0,3,0,0"
+                                               Foreground="{DynamicResource MutedBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+
+            <!-- Состав выбранного заказа -->
+            <DockPanel Grid.Column="2">
+                <TextBlock DockPanel.Dock="Top" Text="Состав выбранного заказа:" FontWeight="SemiBold" Margin="0,8,0,6"
+                           Foreground="{DynamicResource MutedBrush}"/>
+                <ListBox x:Name="lbOrderItems" Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,6" Padding="10" CornerRadius="2"
+                                    Background="White" BorderBrush="{DynamicResource Accent}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding ProductName}" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{Binding DisplayText}" Margin="0,3,0,0"
+                                               Foreground="{DynamicResource MutedBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
         </Grid>
-    </Grid>
+    </DockPanel>
 </Window>
 
-
-OrdersWindow.axaml.cs
+Views/OrdersWindow.axaml.cs
+using System;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using ChudoObuvAvalonia.Models;
-using ChudoObuvAvalonia.Services;
+using ChudoObuv.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 
-namespace ChudoObuvAvalonia;
+namespace ChudoObuv.Views;
 
 public partial class OrdersWindow : Window
 {
     public OrdersWindow()
     {
         InitializeComponent();
-        EditBtn.IsVisible = Session.CanEditOrders;
+        ApplyPermissions();
         LoadOrders();
     }
 
-    private void LoadOrders(int? selectId = null)
+    private void ApplyPermissions()
     {
-        try
-        {
-            var orders = App.Db.Orders
-                .Include(o => o.User)
-                .Include(o => o.OrderItems).ThenInclude(i => i.StockItem).ThenInclude(s => s.Product)
-                .OrderByDescending(o => o.OrderDate).ThenByDescending(o => o.OrderId)
-                .ToList();
+        var user = LoginWindow.CurrentUser;
+        bool isAdmin = user != null && user.RoleId == 1;
+        btnEditOrder.IsVisible = isAdmin;
+        btnDeleteOrder.IsVisible = isAdmin;
+    }
 
-            OrdersList.ItemsSource = orders;
-            if (orders.Count > 0)
-                OrdersList.SelectedItem = orders.FirstOrDefault(o => o.OrderId == selectId) ?? orders[0];
-            else
-                ShowDetails(null);
+    public void LoadOrders()
+    {
+        var orders = App.Db.Orders
+            .Include(o => o.User)
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.StockItem)
+                    .ThenInclude(si => si.Product)
+            .OrderByDescending(o => o.OrderId)
+            .ToList();
+
+        lbOrders.ItemsSource = orders;
+        lbOrderItems.ItemsSource = null;
+    }
+
+    private void LbOrders_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (lbOrders.SelectedItem is Order order)
+        {
+            lbOrderItems.ItemsSource = order.OrderItems.ToList();
         }
-        catch { }
-    }
-
-    private void OrdersList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        ShowDetails(OrdersList.SelectedItem as Order);
-    }
-
-    private void ShowDetails(Order? order)
-    {
-        if (order == null)
+        else
         {
-            DetailsTitle.Text = "Состав заказа";
-            ItemsList.ItemsSource = null;
-            TotalText.Text = "";
+            lbOrderItems.ItemsSource = null;
+        }
+    }
+
+    private async void BtnEditOrder_Click(object? sender, RoutedEventArgs e)
+    {
+        if (lbOrders.SelectedItem is not Order order)
+        {
+            await Dialogs.ShowMessage(this, "Выберите заказ для редактирования.");
             return;
         }
 
-        DetailsTitle.Text = $"Состав заказа №{order.OrderId}";
-        ItemsList.ItemsSource = order.OrderItems.OrderBy(i => i.OrderItemId).ToList();
-        TotalText.Text = $"Итого: {order.Total:N0} ₽";
+        var editWindow = new OrderEditWindow(order);
+        await editWindow.ShowDialog(this);
+        LoadOrders();
     }
 
-    private void NewBtn_Click(object? sender, RoutedEventArgs e)
+    private async void BtnDeleteOrder_Click(object? sender, RoutedEventArgs e)
     {
-        Close();
-    }
+        if (lbOrders.SelectedItem is not Order order)
+        {
+            await Dialogs.ShowMessage(this, "Выберите заказ для удаления.");
+            return;
+        }
 
-    private async void EditBtn_Click(object? sender, RoutedEventArgs e)
-    {
-        if (OrdersList.SelectedItem is not Order order) return;
-        var win = new OrderEditWindow(order);
-        var result = await win.ShowDialog<bool>(this);
-        if (result)
-            LoadOrders(order.OrderId);
-    }
-
-    private void DeleteBtn_Click(object? sender, RoutedEventArgs e)
-    {
-        if (OrdersList.SelectedItem is not Order order) return;
+        bool ok = await Dialogs.Confirm(this, $"Удалить заказ №{order.OrderId}? Товары вернутся на склад.");
+        if (!ok) return;
 
         try
         {
-            var db = App.Db;
-            foreach (var item in order.OrderItems.ToList())
+            // Возвращаем остатки на склад
+            foreach (var item in order.OrderItems)
             {
-                item.StockItem.Quantity += item.Quantity; // возврат на склад
-                db.OrderItems.Remove(item);
+                var stock = App.Db.StockItems.Find(item.StockItemId);
+                if (stock != null)
+                {
+                    stock.Quantity += item.Quantity;
+                }
             }
 
-            db.Orders.Remove(order);
-            db.SaveChanges();
+            App.Db.OrderItems.RemoveRange(order.OrderItems);
+            App.Db.Orders.Remove(order);
+            App.Db.SaveChanges();
+
+            await Dialogs.ShowMessage(this, $"Заказ №{order.OrderId} успешно удален.");
             LoadOrders();
         }
-        catch
+        catch (Exception ex)
         {
-            App.ResetDb();
-            LoadOrders();
+            await Dialogs.ShowMessage(this, "Ошибка удаления заказа: " + ex.Message, "Ошибка");
         }
     }
-
-    private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 }
 
-
-#OrderEditWindow (Редактирование заказа через ListBox)
-OrderEditWindow.axaml
+Views/OrderEditWindow.axaml
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="ChudoObuvAvalonia.OrderEditWindow"
-        Title="Чудо Обувь — Редактирование заказа"
-        Width="920" Height="640" MinWidth="760" MinHeight="500"
-        WindowStartupLocation="CenterOwner">
-    <Grid Margin="16" RowDefinitions="Auto,Auto,*,Auto,Auto">
-        <TextBlock x:Name="HeaderText" Grid.Row="0" Classes="heading"/>
-
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,160,Auto,*" Margin="0,0,0,10">
-            <TextBlock Grid.Column="0" Text="Дата заказа:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <CalendarDatePicker x:Name="DateBox" Grid.Column="1"/>
-            <TextBlock Grid.Column="2" Text="Клиент:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="16,0,8,0"/>
-            <ComboBox x:Name="CustomerBox" Grid.Column="3" HorizontalAlignment="Stretch"/>
-        </Grid>
-
-        <!-- Таблица позиций через ListBox -->
-        <Border Grid.Row="2" BorderBrush="#70B2AF" BorderThickness="1" CornerRadius="2">
-            <DockPanel>
-                <Border DockPanel.Dock="Top" Background="#D2F6E7" Padding="12,8" BorderBrush="#70B2AF" BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="*,90,110,140,120,90">
-                        <TextBlock Grid.Column="0" Text="Товар" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="1" Text="Размер" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="2" Text="Цена" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="3" Text="Количество" FontWeight="Bold" HorizontalAlignment="Center"/>
-                        <TextBlock Grid.Column="4" Text="Сумма" FontWeight="Bold"/>
-                        <TextBlock Grid.Column="5" Text="Действие" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    </Grid>
-                </Border>
-                <ListBox x:Name="LinesList" Background="Transparent" BorderThickness="0">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Grid ColumnDefinitions="*,90,110,140,120,90" Margin="4,2">
-                                <TextBlock Grid.Column="0" Text="{Binding ProductName}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                <TextBlock Grid.Column="1" Text="{Binding SizeText}" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="{Binding UnitPrice, StringFormat={}{0:N0} ₽}" VerticalAlignment="Center"/>
-                                <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="−" Padding="8,1" Click="Minus_Click"/>
-                                    <TextBlock Text="{Binding Quantity}" Width="32" TextAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                    <Button Content="+" Padding="8,1" Click="Plus_Click"/>
-                                </StackPanel>
-                                <TextBlock Grid.Column="4" Text="{Binding Sum, StringFormat={}{0:N0} ₽}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                                <Button Grid.Column="5" Content="Удалить" Padding="6,1" HorizontalAlignment="Center" Click="Remove_Click"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
+        x:Class="ChudoObuv.Views.OrderEditWindow"
+        x:CompileBindings="False"
+        Title="Редактирование заказа — Чудо Обувь"
+        Icon="/Resources/app.ico"
+        Height="480" Width="600" MinWidth="480" MinHeight="320"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource MainBg}">
+    <DockPanel Margin="18">
+        <Border DockPanel.Dock="Top" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Accent}" Padding="0,0,0,10">
+            <TextBlock x:Name="tbHeader" Text="Редактирование заказа" FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextBrush}"/>
         </Border>
 
-        <!-- Добавление новой товарной позиции -->
-        <Border Grid.Row="3" Classes="panel" Margin="0,10,0,0">
-            <DockPanel>
-                <Button DockPanel.Dock="Right" Content="Добавить позицию" Classes="accent" Click="AddItem_Click"/>
-                <ComboBox x:Name="StockBox" Margin="0,0,8,0" HorizontalAlignment="Stretch"/>
-            </DockPanel>
+        <Border DockPanel.Dock="Bottom" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Accent}" Padding="0,12,0,0" Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                <Button Content="Закрыть" Padding="14,6" Background="{DynamicResource AltBg}"
+                        Foreground="{DynamicResource TextBrush}" Click="BtnClose_Click"/>
+            </StackPanel>
         </Border>
 
-        <DockPanel Grid.Row="4" Margin="0,12,0,0" LastChildFill="False">
-            <TextBlock x:Name="TotalText" DockPanel.Dock="Left" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button DockPanel.Dock="Right" Content="Отмена" Click="Cancel_Click"/>
-            <Button DockPanel.Dock="Right" Content="Сохранить" Classes="accent" Click="Save_Click"/>
-        </DockPanel>
-    </Grid>
+        <ListBox x:Name="lbItems" Margin="0,10,0,0" Background="Transparent">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="0,0,0,6" Padding="10" CornerRadius="2"
+                            Background="White" BorderBrush="{DynamicResource Accent}" BorderThickness="1">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ProductName}" FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="{Binding DisplayText}" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource MutedBrush}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                                <Button Content="-" Width="28" Height="28" Padding="0"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                        Tag="{Binding}" Click="BtnMinus_Click"/>
+                                <TextBlock Text="{Binding Quantity}" VerticalAlignment="Center" Margin="8,0"
+                                           FontWeight="Bold"/>
+                                <Button Content="+" Width="28" Height="28" Padding="0"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                        Tag="{Binding}" Click="BtnPlus_Click"/>
+                            </StackPanel>
+
+                            <Button Grid.Column="2" Content="Удалить" Padding="8,4"
+                                    Background="{DynamicResource AltBg}" Foreground="{DynamicResource TextBrush}"
+                                    Tag="{Binding}" Click="BtnRemove_Click"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
 </Window>
 
-
-OrderEditWindow.axaml.cs
+Views/OrderEditWindow.axaml.cs
+using System;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using ChudoObuvAvalonia.Models;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Linq;
+using ChudoObuv.Models;
 
-namespace ChudoObuvAvalonia;
-
-public class EditLine : INotifyPropertyChanged
-{
-    private int _quantity;
-
-    public EditLine(StockItem item, int quantity, decimal unitPrice, OrderItem? existing)
-    {
-        Item = item;
-        _quantity = quantity;
-        UnitPrice = unitPrice;
-        Existing = existing;
-    }
-
-    public StockItem Item { get; }
-    public OrderItem? Existing { get; }
-    public decimal UnitPrice { get; }
-
-    public string ProductName => Item.Product?.ProductName ?? "";
-    public string SizeText => Item.SizeText;
-    public decimal Sum => Quantity * UnitPrice;
-
-    public int OriginalQuantity => Existing?.Quantity ?? 0;
-    public int MaxQuantity => Item.Quantity + OriginalQuantity;
-
-    public int Quantity
-    {
-        get => _quantity;
-        set
-        {
-            _quantity = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Quantity)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Sum)));
-        }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-}
+namespace ChudoObuv.Views;
 
 public partial class OrderEditWindow : Window
 {
     private readonly Order _order;
-    private readonly ObservableCollection<EditLine> _lines = new();
 
     public OrderEditWindow()
     {
@@ -2053,147 +1841,172 @@ public partial class OrderEditWindow : Window
         _order = new Order();
     }
 
-    public OrderEditWindow(Order order)
+    public OrderEditWindow(Order order) : this()
+    {
+        _order = order;
+        tbHeader.Text = $"Редактирование заказа №{order.OrderId} ({order.CustomerFio})";
+        RefreshItems();
+    }
+
+    private void RefreshItems()
+    {
+        lbItems.ItemsSource = null;
+        lbItems.ItemsSource = _order.OrderItems.ToList();
+    }
+
+    private async void BtnPlus_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is OrderItem item)
+        {
+            var stock = App.Db.StockItems.Find(item.StockItemId);
+            if (stock != null && stock.Quantity > 0)
+            {
+                stock.Quantity--;
+                item.Quantity++;
+                App.Db.SaveChanges();
+                RefreshItems();
+            }
+            else
+            {
+                await Dialogs.ShowMessage(this, "На складе нет доступного количества этого размера.");
+            }
+        }
+    }
+
+    private async void BtnMinus_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is OrderItem item)
+        {
+            if (item.Quantity > 1)
+            {
+                var stock = App.Db.StockItems.Find(item.StockItemId);
+                if (stock != null) stock.Quantity++;
+                item.Quantity--;
+                App.Db.SaveChanges();
+                RefreshItems();
+            }
+            else
+            {
+                await RemoveItem(item);
+            }
+        }
+    }
+
+    private async void BtnRemove_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is OrderItem item)
+        {
+            await RemoveItem(item);
+        }
+    }
+
+    private async Task RemoveItem(OrderItem item)
+    {
+        bool ok = await Dialogs.Confirm(this, $"Удалить позицию «{item.ProductName}» из заказа?");
+        if (!ok) return;
+
+        var stock = App.Db.StockItems.Find(item.StockItemId);
+        if (stock != null)
+        {
+            stock.Quantity += item.Quantity;
+        }
+
+        App.Db.OrderItems.Remove(item);
+        _order.OrderItems.Remove(item);
+        App.Db.SaveChanges();
+        RefreshItems();
+    }
+
+    private void BtnClose_Click(object? sender, RoutedEventArgs e) => Close();
+}
+
+Views/ProductUserControl.axaml
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="160"
+             x:Class="ChudoObuv.Views.ProductUserControl"
+             x:CompileBindings="False">
+
+    <Border x:Name="Card" Margin="0,0,0,8" Background="Transparent" BorderThickness="2"
+            BorderBrush="Transparent">
+        <Grid ColumnDefinitions="136,*,Auto">
+
+            <Border Grid.Column="0" Background="White" BorderThickness="1" BorderBrush="{DynamicResource Accent}"
+                    Width="124" Height="124" VerticalAlignment="Top" HorizontalAlignment="Left">
+                <Image x:Name="Photo" Stretch="Uniform" Margin="4"/>
+            </Border>
+
+            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                <TextBlock x:Name="tbTitle" FontSize="17" Foreground="{DynamicResource TextBrush}"/>
+                <TextBlock x:Name="tbCategory" Margin="0,2,0,0" Foreground="{DynamicResource MutedBrush}"/>
+                <TextBlock x:Name="tbManufacturer" Margin="0,4,0,0" Foreground="{DynamicResource TextBrush}"/>
+                <TextBlock x:Name="tbComposition" MaxHeight="40" Margin="0,2,0,0" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextBrush}"/>
+                <TextBlock x:Name="tbSizes" Margin="0,2,0,0" Foreground="{DynamicResource TextBrush}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" MinWidth="130">
+                <TextBlock x:Name="tbPrice" FontSize="22" HorizontalAlignment="Right" Foreground="{DynamicResource TextBrush}"/>
+                <TextBlock x:Name="tbCount" HorizontalAlignment="Right" Margin="0,6,0,0" Foreground="{DynamicResource MutedBrush}"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
+
+Views/ProductUserControl.axaml.cs
+using Avalonia.Controls;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using ChudoObuv.Models;
+
+namespace ChudoObuv.Views;
+
+public partial class ProductUserControl : UserControl
+{
+    public ProductUserControl()
     {
         InitializeComponent();
-        _order = order;
-
-        HeaderText.Text = $"Редактирование заказа №{order.OrderId}";
-        DateBox.SelectedDate = order.OrderDate.ToDateTime(TimeOnly.MinValue);
-
-        var users = App.Db.Users.OrderBy(u => u.LastName).ThenBy(u => u.FirstName).ToList();
-        CustomerBox.ItemsSource = users;
-        CustomerBox.ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<User>((u, _) =>
-            new TextBlock { Text = u.Fio });
-        CustomerBox.SelectedItem = users.FirstOrDefault(u => u.UserId == order.UserId);
-
-        foreach (var item in order.OrderItems.OrderBy(i => i.OrderItemId))
-            _lines.Add(new EditLine(item.StockItem, item.Quantity, item.UnitPrice, item));
-        LinesList.ItemsSource = _lines;
-
-        var stockList = App.Db.StockItems
-            .Include(s => s.Product)
-            .ToList()
-            .OrderBy(s => s.Product?.ProductName)
-            .ThenBy(s => s.SizeValue)
-            .ToList();
-        StockBox.ItemsSource = stockList;
-        StockBox.ItemTemplate = new Avalonia.Controls.Templates.FuncDataTemplate<StockItem>((s, _) =>
-            new TextBlock { Text = s.FullDisplay });
-
-        _lines.CollectionChanged += (_, _) => UpdateTotal();
-        foreach (var line in _lines)
-            line.PropertyChanged += (_, _) => UpdateTotal();
-        UpdateTotal();
     }
 
-    private void UpdateTotal()
+    public Product? Product { get; set; }
+
+    public void SetSelected(bool selected)
     {
-        TotalText.Text = $"Итого: {_lines.Sum(l => l.Sum):N0} ₽";
+        Card.BorderBrush = selected ? Brush.Parse("#3E7C79") : Brushes.Transparent;
     }
 
-    private void Plus_Click(object? sender, RoutedEventArgs e)
+    public void LoadData(Product product)
     {
-        if ((sender as Button)?.DataContext is not EditLine line) return;
-        if (line.Quantity + 1 > line.MaxQuantity) return;
-        line.Quantity++;
+        Product = product;
+        tbTitle.Text = product.ProductName;
+        tbCategory.Text = product.CategoryText;
+        tbManufacturer.Text = "Производитель: " + product.Manufacturer.ManufacturerName;
+        tbComposition.Text = "Состав: " + product.Composition;
+        ToolTip.SetTip(tbComposition, product.Description);
+        tbSizes.Text = "Размеры: " + product.SizesText;
+        tbCount.Text = $"В наличии: {product.TotalQuantity} пар";
+        tbPrice.Text = product.PriceText;
+        Photo.Source = LoadImage(product.ImagePath);
     }
 
-    private void Minus_Click(object? sender, RoutedEventArgs e)
+    private static Bitmap? LoadImage(string path)
     {
-        if ((sender as Button)?.DataContext is not EditLine line) return;
-        if (line.Quantity > 1)
-            line.Quantity--;
-    }
-
-    private void Remove_Click(object? sender, RoutedEventArgs e)
-    {
-        if ((sender as Button)?.DataContext is EditLine line)
-            _lines.Remove(line);
-    }
-
-    private void AddItem_Click(object? sender, RoutedEventArgs e)
-    {
-        if (StockBox.SelectedItem is not StockItem item) return;
-
-        var line = _lines.FirstOrDefault(l => l.Item.StockItemId == item.StockItemId);
-        if (line != null)
-        {
-            if (line.Quantity + 1 <= line.MaxQuantity)
-                line.Quantity++;
-            return;
-        }
-
-        var existing = _order.OrderItems.FirstOrDefault(i => i.StockItemId == item.StockItemId);
-        int max = item.Quantity + (existing?.Quantity ?? 0);
-        if (max < 1) return;
-
-        var newLine = new EditLine(item, 1, existing?.UnitPrice ?? item.Product?.Price ?? 0, existing);
-        newLine.PropertyChanged += (_, _) => UpdateTotal();
-        _lines.Add(newLine);
-    }
-
-    private void Cancel_Click(object? sender, RoutedEventArgs e)
-    {
-        Close(false);
-    }
-
-    private void Save_Click(object? sender, RoutedEventArgs e)
-    {
-        if (DateBox.SelectedDate == null) return;
-        if (CustomerBox.SelectedItem is not User customer) return;
-        if (_lines.Count == 0) return;
-
-        var lines = _lines.ToList();
-        foreach (var line in lines)
-        {
-            if (line.Quantity > line.MaxQuantity) return;
-        }
+        var file = File.Exists(path)
+            ? path
+            : Path.Combine(AppContext.BaseDirectory, "Images", "picture.png");
+        if (!File.Exists(file))
+            return null;
 
         try
         {
-            var db = App.Db;
-
-            // 1. Позиции, удаленные из заказа, возвращаются на склад
-            foreach (var oi in _order.OrderItems.ToList())
-            {
-                if (lines.Any(l => l.Existing == oi)) continue;
-                oi.StockItem.Quantity += oi.Quantity;
-                db.OrderItems.Remove(oi);
-            }
-
-            // 2. Измененные и новые позиции
-            foreach (var line in lines)
-            {
-                if (line.Existing != null)
-                {
-                    line.Item.Quantity -= line.Quantity - line.Existing.Quantity;
-                    line.Existing.Quantity = line.Quantity;
-                }
-                else
-                {
-                    line.Item.Quantity -= line.Quantity;
-                    _order.OrderItems.Add(new OrderItem
-                    {
-                        StockItemId = line.Item.StockItemId,
-                        StockItem = line.Item,
-                        Quantity = line.Quantity,
-                        UnitPrice = line.UnitPrice
-                    });
-                }
-            }
-
-            _order.OrderDate = DateOnly.FromDateTime(DateBox.SelectedDate.Value.Date);
-            _order.User = customer;
-            _order.UserId = customer.UserId;
-
-            db.SaveChanges();
-            Close(true);
+            using var stream = File.OpenRead(file);
+            return Bitmap.DecodeToWidth(stream, 240);   // как DecodePixelWidth = 240 в WPF
         }
         catch
         {
-            App.ResetDb();
-            Close(true);
+            return null;
         }
     }
 }
